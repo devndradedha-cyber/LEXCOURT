@@ -93,6 +93,55 @@ function normalizeYear(raw: string): number {
   return raw.length === 2 ? 2000 + n : n;
 }
 
+// ---------------------------------------------------------------------------
+// Hindi, Punjabi and Urdu (mainly for spoken or typed descriptions)
+// ---------------------------------------------------------------------------
+
+/** NFC so that letters with a nukta (फ़, ਫ਼, ਸ਼) always have the same form. */
+const nfc = (s: string) => s.normalize('NFC');
+
+/** Devanagari, Gurmukhi, Arabic-Indic and Extended Arabic-Indic digits → 0-9. */
+export function normalizeDigits(text: string): string {
+  return text.replace(/[\u0966-\u096F\u0A66-\u0A6F\u0660-\u0669\u06F0-\u06F9]/g, (c) => {
+    const code = c.charCodeAt(0);
+    const base = code >= 0x0a66 ? 0x0a66 : code >= 0x0966 ? 0x0966 : code >= 0x06f0 ? 0x06f0 : 0x0660;
+    return String(code - base);
+  });
+}
+
+const INDIC_MONTHS: Record<string, number> = Object.fromEntries(
+  (
+    [
+      // Hindi
+      ['जनवरी', 1], ['फ़रवरी', 2], ['फरवरी', 2], ['मार्च', 3], ['अप्रैल', 4], ['अप्रेल', 4], ['मई', 5], ['जून', 6],
+      ['जुलाई', 7], ['अगस्त', 8], ['सितंबर', 9], ['सितम्बर', 9], ['अक्टूबर', 10], ['अक्तूबर', 10],
+      ['नवंबर', 11], ['नवम्बर', 11], ['दिसंबर', 12], ['दिसम्बर', 12],
+      // Punjabi
+      ['ਜਨਵਰੀ', 1], ['ਫ਼ਰਵਰੀ', 2], ['ਫਰਵਰੀ', 2], ['ਮਾਰਚ', 3], ['ਅਪ੍ਰੈਲ', 4], ['ਅਪਰੈਲ', 4], ['ਮਈ', 5], ['ਜੂਨ', 6],
+      ['ਜੁਲਾਈ', 7], ['ਅਗਸਤ', 8], ['ਸਤੰਬਰ', 9], ['ਸਿਤੰਬਰ', 9], ['ਅਕਤੂਬਰ', 10], ['ਨਵੰਬਰ', 11], ['ਦਸੰਬਰ', 12],
+      // Urdu
+      ['جنوری', 1], ['فروری', 2], ['مارچ', 3], ['اپریل', 4], ['مئی', 5], ['جون', 6],
+      ['جولائی', 7], ['اگست', 8], ['ستمبر', 9], ['اکتوبر', 10], ['نومبر', 11], ['دسمبر', 12],
+    ] as [string, number][]
+  ).map(([name, n]) => [nfc(name), n]),
+);
+const INDIC_MONTH_RE = `(${Object.keys(INDIC_MONTHS).sort((a, b) => b.length - a.length).join('|')})`;
+
+/** Morning / afternoon / evening / night words that come before the time in Hindi, Punjabi and Urdu. */
+const INDIC_MORNING = new RegExp(nfc('(सुबह|सवेरे|ਸਵੇਰੇ|ਸਵੇਰ|صبح)\\s*$'));
+const INDIC_PM = new RegExp(nfc('(दोपहर|शाम|रात|ਦੁਪਹਿਰ|ਸ਼ਾਮ|ਰਾਤ|دوپہر|شام|رات)\\s*(को|ਨੂੰ|کو)?\\s*$'));
+
+/**
+ * Text cleanup for every language: native digits → 0-9, one form for Arabic
+ * yeh/kaf, NFC, and no invisible direction marks.
+ */
+export function normalizeText(text: string): string {
+  return nfc(normalizeDigits(text))
+    .replace(/[\u064A\u0649]/g, '\u06CC') // Arabic yeh → Farsi/Urdu yeh
+    .replace(/\u0643/g, '\u06A9') // Arabic kaf → keheh
+    .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '');
+}
+
 /** Find every date-looking string in the text. */
 export function findDates(text: string, today = new Date()): Found<string>[] {
   const out: Found<string>[] = [];
@@ -161,6 +210,16 @@ export function findDates(text: string, today = new Date()): Found<string>[] {
     push(parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10), match.index, match.index + match[0].length);
   }
 
+  // Hindi / Punjabi / Urdu, day first: "3 मार्च 2027", "3 ਮਾਰਚ, 2027", "3 مارچ 2027".
+  // (\b does not work next to these scripts, so lookarounds are used.)
+  const indic = new RegExp(`(?<!\\d)(\\d{1,2})\\s*${INDIC_MONTH_RE}(?![\\p{L}\\p{M}])(?:[\\s,،]+(\\d{4}))?(?!\\d)`, 'gu');
+  while ((match = indic.exec(text))) {
+    const d = parseInt(match[1], 10);
+    const m = INDIC_MONTHS[match[2]];
+    const y = match[3] ? parseInt(match[3], 10) : inferYear(m, d, today);
+    push(y, m, d, match.index, match.index + match[0].length);
+  }
+
   // Drop matches fully contained in another match (e.g. "March 3" inside "March 3, 2027").
   return out
     .filter(
@@ -176,7 +235,7 @@ export function findDates(text: string, today = new Date()): Found<string>[] {
 export function findTimes(text: string): Found<string>[] {
   const out: Found<string>[] = [];
   const re =
-    /\b(\d{1,2})(?::(\d{2}))?\s*(a\.?\s?m\.?|p\.?\s?m\.?|de la ma[ñn]ana|de la tarde|de la noche|in the morning|in the afternoon|in the evening|hrs?\b|horas\b)?/gi;
+    /\b(\d{1,2})(?::(\d{2}))?\s*(a\.?\s?m\.?|p\.?\s?m\.?|de la ma[ñn]ana|de la tarde|de la noche|in the morning|in the afternoon|in the evening|hrs?\b|horas\b|बजे|ਵਜੇ|بجے)?/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(text))) {
     const hasMinutes = match[2] !== undefined;
@@ -185,8 +244,12 @@ export function findTimes(text: string): Found<string>[] {
     let h = parseInt(match[1], 10);
     const min = hasMinutes ? parseInt(match[2], 10) : 0;
     if (h > 23 || min > 59) continue;
-    const pm = suffix.startsWith('pm') || suffix.includes('tarde') || suffix.includes('noche') || suffix.includes('afternoon') || suffix.includes('evening');
-    const am = suffix.startsWith('am') || suffix.includes('ma') || suffix.includes('morning');
+    // Hindi/Punjabi/Urdu put the time of day first: "सुबह 8:30 बजे", "ਸ਼ਾਮ 5 ਵਜੇ".
+    const before = text.slice(Math.max(0, match.index - 14), match.index);
+    const indicPm = INDIC_PM.test(before);
+    const indicAm = INDIC_MORNING.test(before);
+    const pm = indicPm || suffix.startsWith('pm') || suffix.includes('tarde') || suffix.includes('noche') || suffix.includes('afternoon') || suffix.includes('evening');
+    const am = indicAm || suffix.startsWith('am') || (suffix.includes('ma') && !suffix.includes('मा')) || suffix.includes('morning');
     if (pm && h < 12) h += 12;
     if (am && h === 12) h = 0;
     if ((pm || am) && parseInt(match[1], 10) > 12) continue;
@@ -207,8 +270,10 @@ export function findTimes(text: string): Found<string>[] {
 // is much safer than showing the wrong day.
 // ---------------------------------------------------------------------------
 
-const HEARING_KEYWORDS =
-  /(scheduled|hearing|appear|audiencia|comparecer|programad[ao]|court date|cita|corte)/gi;
+const HEARING_KEYWORDS = new RegExp(
+  nfc('(scheduled|hearing|appear|audiencia|comparecer|programad[ao]|court date|cita|corte|सुनवाई|पेशी|अदालत|कोर्ट|ਸੁਣਵਾਈ|ਪੇਸ਼ੀ|ਅਦਾਲਤ|ਕੋਰਟ|سماعت|پیشی|عدالت|کورٹ)'),
+  'gi',
+);
 
 /** Labels that mark a date as the notice's own date, not the hearing date. */
 const ISSUE_DATE_LABEL =
@@ -253,6 +318,8 @@ function pickHearingDate(text: string, dates: Found<string>[], times: Found<stri
     if (hearingKw.some((p) => d.index >= p && d.index - p <= 120)) score += 3;
     if (times.some((t) => t.index >= d.end && t.index - d.end <= 40)) score += 2;
     if (/\b(on|el|for|para|para el)\s*:?\s*$/i.test(text.slice(Math.max(0, d.index - 12), d.index))) score += 2;
+    // Hindi/Punjabi/Urdu postpositions come after the date: "3 मार्च 2027 को".
+    if (/^\s*(को|ਨੂੰ|کو)/.test(text.slice(d.end, d.end + 6))) score += 2;
     // Require positive evidence. Ties go to the later date.
     if (score > bestScore || (score === bestScore && score > 0 && best && d.value > best.value)) {
       best = d;
@@ -340,6 +407,12 @@ function findAddressCandidates(text: string, hearingDate: Found<string> | null):
       labeled = true;
     } else if (prefix.trim() && !ADDRESS_WORDS.test(prefix)) {
       start = cityStart; // unrelated words before the city
+    } else {
+      // No "at:" label (common when describing a notice in Hindi, Punjabi or
+      // Urdu): start at the last street number, e.g. "… 8:30 बजे, 26 Federal Plaza, …".
+      const streets = [...prefix.matchAll(/(?<![\d:])\d{1,6}\s+[A-Z][A-Za-z]/g)];
+      const last = streets[streets.length - 1];
+      if (last && last.index! > 0 && /[^\x00-\x7F]/.test(prefix.slice(0, last.index))) start += last.index!;
     }
 
     // Walk back over up to 3 earlier lines that look like street / floor / room.
@@ -418,10 +491,15 @@ function pickCourtAddress(text: string, hearingDate: Found<string> | null): stri
   return m ? m[1].trim() : null;
 }
 
+const INDIC_NOH = new RegExp(nfc('सुनवाई\\s+का\\s+नोटिस|ਸੁਣਵਾਈ\\s+ਦਾ\\s+ਨੋਟਿਸ|سماعت\\s+کا\\s+نوٹس'));
+const INDIC_NTA = new RegExp(nfc('हाज़िर\\s+होने\\s+का\\s+नोटिस|हाजिर\\s+होने\\s+का\\s+नोटिस|ਹਾਜ਼ਰ\\s+ਹੋਣ\\s+ਦਾ\\s+ਨੋਟਿਸ|حاضر\\s+ہونے\\s+کا\\s+نوٹس'));
+const INDIC_MASTER = new RegExp(nfc('मास्टर|ਮਾਸਟਰ|ماسٹر'));
+const INDIC_INDIVIDUAL = new RegExp(nfc('व्यक्तिगत\\s+सुनवाई|ਵਿਅਕਤੀਗਤ\\s+ਸੁਣਵਾਈ|انفرادی\\s+سماعت'));
+
 export function detectNoticeType(text: string): NoticeType {
-  if (/notice\s+of\s+(?:in[-\s]?person\s+|internet[-\s]?based\s+|video\s+|telephonic\s+)?(?:master\s+|individual\s+)?hearing|aviso\s+de\s+audiencia|notificaci[oó]n\s+de\s+audiencia/i.test(text))
+  if (/notice\s+of\s+(?:in[-\s]?person\s+|internet[-\s]?based\s+|video\s+|telephonic\s+)?(?:master\s+|individual\s+)?hearing|aviso\s+de\s+audiencia|notificaci[oó]n\s+de\s+audiencia/i.test(text) || INDIC_NOH.test(text))
     return 'notice_of_hearing';
-  if (/notice\s+to\s+appear|\bI[-\s]?862\b|aviso\s+de\s+comparecencia|notificaci[oó]n\s+de\s+comparecencia/i.test(text))
+  if (/notice\s+to\s+appear|\bI[-\s]?862\b|aviso\s+de\s+comparecencia|notificaci[oó]n\s+de\s+comparecencia/i.test(text) || INDIC_NTA.test(text))
     return 'notice_to_appear';
   if (/order\s+of\s+the\s+immigration\s+judge|orden\s+del\s+juez|decision\s+(?:and\s+order\s+)?of\s+the\s+immigration\s+judge/i.test(text))
     return 'judge_order';
@@ -431,9 +509,9 @@ export function detectNoticeType(text: string): NoticeType {
 export function detectHearingType(text: string): HearingType {
   // Match the hearing's own label, not boilerplate such as
   // "an attorney or other individual authorized to practice".
-  if (/\bindividual\s+(?:calendar\s+|merits\s+)?hearing|\bmerits\s+hearing|audiencia\s+individual|audiencia\s+de\s+m[eé]ritos|hearing\s+type\s*:\s*individual/i.test(text))
+  if (/\bindividual\s+(?:calendar\s+|merits\s+)?hearing|\bmerits\s+hearing|audiencia\s+individual|audiencia\s+de\s+m[eé]ritos|hearing\s+type\s*:\s*individual/i.test(text) || INDIC_INDIVIDUAL.test(text))
     return 'individual';
-  if (/\bmaster\b|calendario\s+principal|audiencia\s+preliminar|primera\s+audiencia|first\s+hearing/i.test(text)) return 'master';
+  if (/\bmaster\b|calendario\s+principal|audiencia\s+preliminar|primera\s+audiencia|first\s+hearing/i.test(text) || INDIC_MASTER.test(text)) return 'master';
   return 'unknown';
 }
 
@@ -454,7 +532,7 @@ export function findANumber(text: string): string | null {
 }
 
 export function extractNoticeFacts(text: string, today = new Date()): NoticeFacts {
-  const clean = text.replace(/ /g, ' ').replace(/[ \t]+/g, ' ').replace(/\r\n?/g, '\n');
+  const clean = normalizeText(text).replace(/ /g, ' ').replace(/[ \t]+/g, ' ').replace(/\r\n?/g, '\n');
   const dates = findDates(clean, today);
   const times = findTimes(clean).filter(
     // Ignore "times" that are really part of a date we already matched.

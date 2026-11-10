@@ -34,14 +34,17 @@ export interface Listener {
 }
 
 export function startListening(
-  lang: 'en' | 'es',
+  /** BCP 47 tag such as en-US, es-US, hi-IN, pa-Guru-IN or ur-PK. */
+  speechLang: string,
   onText: (finalText: string, interim: string) => void,
   onEnd: (error?: string) => void,
 ): Listener | null {
   const C = getCtor();
   if (!C) return null;
   const rec = new C();
-  rec.lang = lang === 'es' ? 'es-US' : 'en-US';
+  // Browsers that cannot recognise this language end with the error
+  // "language-not-supported"; the UI then suggests typing instead.
+  rec.lang = speechLang;
   rec.continuous = true;
   rec.interimResults = true;
   let finalText = '';

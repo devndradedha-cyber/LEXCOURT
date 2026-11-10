@@ -7,6 +7,9 @@
  * by a qualified legal translator) before public launch.
  */
 import type { Lang } from './i18n';
+import { hiSummary, hiTools } from './locales/hi';
+import { paSummary, paTools } from './locales/pa';
+import { urSummary, urTools } from './locales/ur';
 import type { AuthorityId, CourtCase, Issue, ReasonId, SummaryText, Who } from './report';
 
 export const TOOLS_DRAFT = true;
@@ -106,8 +109,6 @@ export interface ToolsText {
     summaryEdit: string;
     beforeYouFile: string[];
   };
-
-  summary: Record<Lang, SummaryText>;
 }
 
 const en: ToolsText = {
@@ -330,58 +331,7 @@ const en: ToolsText = {
     ],
   },
 
-  summary: {
-    en: {
-      heading: 'Summary of complaint',
-      person: 'Person',
-      business: 'Business',
-      contact: 'Their address / phone',
-      role: { lawyer: 'says they are a lawyer', accredited: 'says they are an accredited representative', nonlawyer: 'notario / immigration consultant, not a lawyer', unsure: 'I am not sure if they are a lawyer' },
-      whatHappened: 'What happened',
-      issues: {
-        fakeLawyer: 'They said they were a lawyer or could represent me, but they are not.',
-        falseStatements: 'They lied to me, or put false information on my forms or in court.',
-        freeForms: 'They charged me for forms or services that are free.',
-        tookMoney: 'They took my money and did not do the work.',
-        missedDeadline: 'They missed a deadline or a hearing in my case.',
-        keptDocuments: 'They kept my documents and will not give them back.',
-        other: '',
-      },
-      inMyWords: 'In my own words',
-      dates: 'When',
-      amountPaid: 'Money paid',
-      court: 'Immigration court case',
-      courtAnswer: { yes: 'Yes, they worked on my immigration court case', no: 'No', unsure: 'Not sure' },
-      state: 'State',
-      documents: 'Documents I have',
-      closing: 'I am asking you to review this person’s conduct. I can provide copies of my documents.',
-    },
-    es: {
-      heading: 'Resumen de la queja',
-      person: 'Persona',
-      business: 'Negocio',
-      contact: 'Su dirección / teléfono',
-      role: { lawyer: 'dice que es abogado', accredited: 'dice que es representante acreditado', nonlawyer: 'notario / consultor de inmigración, no es abogado', unsure: 'no estoy seguro si es abogado' },
-      whatHappened: 'Qué pasó',
-      issues: {
-        fakeLawyer: 'Dijo que era abogado o que podía representarme, pero no lo es.',
-        falseStatements: 'Me mintió, o puso información falsa en mis formularios o en la corte.',
-        freeForms: 'Me cobró por formularios o servicios que son gratis.',
-        tookMoney: 'Tomó mi dinero y no hizo el trabajo.',
-        missedDeadline: 'No cumplió una fecha límite o faltó a una audiencia de mi caso.',
-        keptDocuments: 'Se quedó con mis documentos y no me los devuelve.',
-        other: '',
-      },
-      inMyWords: 'En mis propias palabras',
-      dates: 'Cuándo',
-      amountPaid: 'Dinero pagado',
-      court: 'Caso en la corte de inmigración',
-      courtAnswer: { yes: 'Sí, trabajó en mi caso en la corte de inmigración', no: 'No', unsure: 'No estoy seguro' },
-      state: 'Estado',
-      documents: 'Documentos que tengo',
-      closing: 'Les pido que revisen la conducta de esta persona. Puedo enviar copias de mis documentos.',
-    },
-  },
+
 };
 
 const es: ToolsText = {
@@ -604,7 +554,63 @@ const es: ToolsText = {
     ],
   },
 
-  summary: en.summary,
 };
 
-export const TOOLS: Record<Lang, ToolsText> = { en, es };
+export const TOOLS: Record<Lang, ToolsText> = { en, es, hi: hiTools, pa: paTools, ur: urTools };
+
+/** Text of the complaint summary, in each language the user can choose. */
+export const SUMMARY: Record<Lang, SummaryText> = {
+    en: {
+      heading: 'Summary of complaint',
+      person: 'Person',
+      business: 'Business',
+      contact: 'Their address / phone',
+      role: { lawyer: 'says they are a lawyer', accredited: 'says they are an accredited representative', nonlawyer: 'notario / immigration consultant, not a lawyer', unsure: 'I am not sure if they are a lawyer' },
+      whatHappened: 'What happened',
+      issues: {
+        fakeLawyer: 'They said they were a lawyer or could represent me, but they are not.',
+        falseStatements: 'They lied to me, or put false information on my forms or in court.',
+        freeForms: 'They charged me for forms or services that are free.',
+        tookMoney: 'They took my money and did not do the work.',
+        missedDeadline: 'They missed a deadline or a hearing in my case.',
+        keptDocuments: 'They kept my documents and will not give them back.',
+        other: '',
+      },
+      inMyWords: 'In my own words',
+      dates: 'When',
+      amountPaid: 'Money paid',
+      court: 'Immigration court case',
+      courtAnswer: { yes: 'Yes, they worked on my immigration court case', no: 'No', unsure: 'Not sure' },
+      state: 'State',
+      documents: 'Documents I have',
+      closing: 'I am asking you to review this person’s conduct. I can provide copies of my documents.',
+    },
+    es: {
+      heading: 'Resumen de la queja',
+      person: 'Persona',
+      business: 'Negocio',
+      contact: 'Su dirección / teléfono',
+      role: { lawyer: 'dice que es abogado', accredited: 'dice que es representante acreditado', nonlawyer: 'notario / consultor de inmigración, no es abogado', unsure: 'no estoy seguro si es abogado' },
+      whatHappened: 'Qué pasó',
+      issues: {
+        fakeLawyer: 'Dijo que era abogado o que podía representarme, pero no lo es.',
+        falseStatements: 'Me mintió, o puso información falsa en mis formularios o en la corte.',
+        freeForms: 'Me cobró por formularios o servicios que son gratis.',
+        tookMoney: 'Tomó mi dinero y no hizo el trabajo.',
+        missedDeadline: 'No cumplió una fecha límite o faltó a una audiencia de mi caso.',
+        keptDocuments: 'Se quedó con mis documentos y no me los devuelve.',
+        other: '',
+      },
+      inMyWords: 'En mis propias palabras',
+      dates: 'Cuándo',
+      amountPaid: 'Dinero pagado',
+      court: 'Caso en la corte de inmigración',
+      courtAnswer: { yes: 'Sí, trabajó en mi caso en la corte de inmigración', no: 'No', unsure: 'No estoy seguro' },
+      state: 'Estado',
+      documents: 'Documentos que tengo',
+      closing: 'Les pido que revisen la conducta de esta persona. Puedo enviar copias de mis documentos.',
+    },
+  hi: hiSummary,
+  pa: paSummary,
+  ur: urSummary,
+};

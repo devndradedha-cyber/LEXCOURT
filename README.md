@@ -19,7 +19,7 @@ A free, mobile-first web app for people in U.S. immigration court who don't have
 5. **Reminders:** it creates a calendar file (`.ics`) with alerts 1 week before, 1 day before, and 2 hours before the hearing. It also offers a pre-filled Google Calendar link.
 6. It links to free legal aid and court resources: the EOIR pro bono list, the ImmigrationAdvocates.net directory, EOIR case status (ACIS and 1-800-898-7180), ICOR guides, and the online EOIR-33/IC change-of-address form. Court links open in the user's language.
 
-The app is in **English and Spanish**. It picks the language from the browser, and the user can switch it at any time. The Spanish address `/es/` opens the app in Spanish and gives search engines and the home-screen icon a Spanish description (`es/index.html`, `public/es/manifest.webmanifest`).
+The app is in **English, Spanish, Hindi (Devanagari), Punjabi (Gurmukhi) and Urdu (Nastaliq, right to left)**. It picks the language from the browser, and the user can switch it at any time from the language menu. The Spanish address `/es/` opens the app in Spanish and gives search engines and the home-screen icon a Spanish description (`es/index.html`, `public/es/manifest.webmanifest`).
 
 ## Check a representative and Report a problem (draft)
 
@@ -34,6 +34,18 @@ The app is in **English and Spanish**. It picks the language from the browser, a
 - **Report a problem** (`#/report`): a five-step questionnaire (who, what happened, immigration court case, state, optional details). It shows which offices usually handle the problem: the state lawyer discipline office, EOIR Disciplinary Counsel (Form EOIR-44), the EOIR Fraud & Abuse Prevention Program, the state attorney general, or the FTC. It links to their official complaint forms and builds a summary, in English or Spanish, to copy and paste. **Nothing is ever submitted automatically.**
 - **Same privacy rules:** answers live only in the page's memory, nothing is stored or sent, and reloading clears everything. The tests check that the only thing in `localStorage` is the terms acceptance.
 - Links are in `src/lib/resources.ts` (`OFFICIAL`, `STATE_LAWYER_LOOKUPS`). They were checked against search-engine indexes on 2026-11-10, but the sites themselves couldn't be opened from the build environment.
+
+## Hindi, Punjabi and Urdu (draft translations)
+
+> ⚠️ **DRAFT, needs native speaker review.** Every Hindi, Punjabi and Urdu screen shows a notice saying the translation is a draft.
+
+- **Where the text lives:** `src/lib/locales/hi.ts`, `pa.ts` and `ur.ts` hold each language's app text, legal text, representative and report text, and complaint summary.
+- **Immigration terms:** terms like "Notice to Appear", "master calendar hearing", "A-Number" and "EOIR-33/IC" are kept **in English in brackets** after the translation, so people can match them to their paper notice. `src/lib/languages.test.ts` checks this.
+- **Urdu (right to left):** the whole page switches to `dir="rtl"`, and CSS uses logical properties (start/end instead of left/right), so the layout mirrors. English terms, phone numbers and links inside Urdu text are wrapped in Unicode left-to-right isolates so they keep their order. The date/time on the results screen is isolated too, and calendar reminders in Urdu start with a right-to-left mark.
+- **Fonts:** Noto Sans Devanagari, Noto Sans Gurmukhi and Noto Nastaliq Urdu are self-hosted from `@fontsource`, script subsets only. A phone downloads a font only when that script appears on screen (about 11–160 KB each). Urdu gets a larger size and line height for Nastaliq.
+- **Voice input:** the app uses `hi-IN`, `pa-Guru-IN` or `ur-PK` where the browser supports it. If the browser doesn't support that language, it shows a message suggesting typing instead. The notice reader understands Hindi, Punjabi and Urdu month names, each script's digits, "o'clock" (बजे / ਵਜੇ / بجے), and morning/evening words that come before the time.
+- **Links:** court and legal-aid sites have no Hindi, Punjabi or Urdu versions, so these languages link to the English pages, and the link labels say so.
+- **Spanish only:** the `/es/` address with a Spanish search description exists for Spanish only.
 
 ## Disclaimer, Terms of Use and Privacy Policy (draft)
 
@@ -100,6 +112,8 @@ Every push then deploys automatically. Other branches get their own preview URLs
 - [ ] Have an attorney review the **Check a representative** and **Report a problem** text and the routing rules (Parts 9–10 of the review document). Then set `TOOLS_DRAFT = false` in `src/lib/toolsText.ts`.
 - [ ] Open every link in `OFFICIAL` and `STATE_LAWYER_LOOKUPS` in a browser. Consider adding official lawyer searches for more states.
 - [ ] Have a qualified legal translator review the Spanish legal text.
+- [ ] Have native speakers review the Hindi, Punjabi and Urdu translations (especially Urdu, which needs a fluent Urdu reader), then set `draftTranslation: false` for each in `src/lib/i18n.ts` and remove `translationDraft`.
+- [ ] Decide with the attorney whether the Terms should say which language version controls.
 - [ ] Have an immigration attorney or DOJ-accredited representative review all text in `src/lib/i18n.ts`.
 - [ ] Have a native Spanish speaker review the Spanish text, ideally with people who will use the app.
 - [ ] Test OCR on real (redacted) notices and phone photos, and tune `extract.ts`.

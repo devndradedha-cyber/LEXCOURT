@@ -39,7 +39,7 @@ export function CheckRepresentative({ lang, onReport }: { lang: Lang; onReport: 
         <div className="fields">
           <label>
             {t.nameLabel}
-            <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" spellCheck={false} />
+            <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" spellCheck={false} dir="auto" />
             <span className="hint small">{t.nameHint}</span>
           </label>
           <p className="hint small">{t.namePrivacy}</p>

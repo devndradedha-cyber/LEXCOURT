@@ -11,6 +11,9 @@
  * change TERMS_VERSION: everyone will be asked to accept the new version.
  */
 import type { Lang } from './i18n';
+import { hiLegal } from './locales/hi';
+import { paLegal } from './locales/pa';
+import { urLegal } from './locales/ur';
 
 export const TERMS_VERSION = '2026-11-10-draft-2';
 export const IS_DRAFT = true;
@@ -460,7 +463,7 @@ const es: LegalText = {
   },
 };
 
-export const LEGAL: Record<Lang, LegalText> = { en, es };
+export const LEGAL: Record<Lang, LegalText> = { en, es, hi: hiLegal, pa: paLegal, ur: urLegal };
 
 // --- Remembering acceptance ------------------------------------------------
 // Only the accepted TERMS_VERSION is stored, on this device. Storage can be

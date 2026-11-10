@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Lang } from '../lib/i18n';
+import { langInfo, type Lang } from '../lib/i18n';
 import { EMPTY_DETAILS, ISSUES, buildSummary, recommend, type Answers, type AuthorityId, type CourtCase, type Details, type Who } from '../lib/report';
 import { OFFICIAL, US_STATES } from '../lib/resources';
-import { TOOLS } from '../lib/toolsText';
+import { SUMMARY, TOOLS } from '../lib/toolsText';
 import { CopyButton, ExtLink, InfoNotAdvice, ToolDraftBanner } from './ToolParts';
 
 const STEPS = 5;
@@ -26,7 +26,7 @@ export function ReportProblem({ lang }: { lang: Lang }) {
 
   const stateName = US_STATES.find(([c]) => c === answers.state)?.[1] ?? null;
   const generated = useMemo(
-    () => buildSummary(answers, TOOLS.en.summary[summaryLang], stateName),
+    () => buildSummary(answers, SUMMARY[summaryLang], stateName),
     [answers, summaryLang, stateName],
   );
   const summary = editedSummary ?? generated;
@@ -159,12 +159,14 @@ export function ReportProblem({ lang }: { lang: Lang }) {
                       rows={5}
                       value={answers.details[f]}
                       placeholder={t.fieldPlaceholders[f]}
+                      dir="auto"
                       onChange={(e) => update({ details: { ...answers.details, [f]: e.target.value } })}
                     />
                   ) : (
                     <input
                       value={answers.details[f]}
                       placeholder={t.fieldPlaceholders[f]}
+                      dir="auto"
                       autoComplete="off"
                       onChange={(e) => update({ details: { ...answers.details, [f]: e.target.value } })}
                     />
@@ -277,14 +279,23 @@ function Results({
         ))}
         <fieldset className="row wrap seg" aria-label={t.summaryLang}>
           <legend className="hint small">{t.summaryLang}</legend>
-          {(['en', 'es'] as Lang[]).map((l) => (
+          {/* Complaint forms are in English (some also in Spanish); the user's own language is offered too. */}
+          {[...new Set<Lang>(['en', 'es', lang])].map((l) => (
             <label key={l} className="choice inline">
               <input type="radio" name="summaryLang" checked={summaryLang === l} onChange={() => onSummaryLang(l)} />
-              <span>{l === 'en' ? 'English' : 'Español'}</span>
+              <span lang={langInfo(l).locale}>{langInfo(l).name}</span>
             </label>
           ))}
         </fieldset>
-        <textarea className="summary" rows={14} value={summary} onChange={(e) => onSummaryChange(e.target.value)} aria-label={t.summaryTitle} />
+        <textarea
+          className="summary"
+          rows={14}
+          value={summary}
+          onChange={(e) => onSummaryChange(e.target.value)}
+          aria-label={t.summaryTitle}
+          lang={langInfo(summaryLang).locale}
+          dir={langInfo(summaryLang).dir}
+        />
         <p className="hint small">{t.summaryEdit}</p>
         <div className="row wrap">
           <CopyButton text={summary} lang={lang} className="btn primary" />

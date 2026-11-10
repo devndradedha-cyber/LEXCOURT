@@ -43,6 +43,11 @@ export const LINKS: Record<Lang, Links> = {
     courtGuide: 'https://icor.eoir.justice.gov/es/',
     changeOfAddress: 'https://respondentaccess.eoir.justice.gov/es/forms/eoir33ic',
   },
+  // The court sites are in English and Spanish only, so Hindi, Punjabi and
+  // Urdu link to the English pages (the link labels say "in English").
+  hi: { ...COMMON, caseStatus: 'https://acis.eoir.justice.gov/en/', courtGuide: 'https://icor.eoir.justice.gov/en/', changeOfAddress: 'https://respondentaccess.eoir.justice.gov/en/forms/eoir33ic' },
+  pa: { ...COMMON, caseStatus: 'https://acis.eoir.justice.gov/en/', courtGuide: 'https://icor.eoir.justice.gov/en/', changeOfAddress: 'https://respondentaccess.eoir.justice.gov/en/forms/eoir33ic' },
+  ur: { ...COMMON, caseStatus: 'https://acis.eoir.justice.gov/en/', courtGuide: 'https://icor.eoir.justice.gov/en/', changeOfAddress: 'https://respondentaccess.eoir.justice.gov/en/forms/eoir33ic' },
 };
 
 /**

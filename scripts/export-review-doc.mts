@@ -32,11 +32,11 @@ import {
   TextRun,
   WidthType,
 } from 'docx';
-import { STRINGS } from '../src/lib/i18n';
+import { STRINGS, type Lang } from '../src/lib/i18n';
 import { LEGAL, TERMS_VERSION, type LegalDoc } from '../src/lib/legal';
 import { LINKS, OFFICIAL, STATE_LAWYER_LOOKUPS } from '../src/lib/resources';
 import { recommend, type Answers, type Issue, type Who } from '../src/lib/report';
-import { TOOLS } from '../src/lib/toolsText';
+import { SUMMARY, TOOLS } from '../src/lib/toolsText';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'review', 'LexCourt-text-for-attorney-review.docx');
@@ -54,7 +54,7 @@ const SECTION_FILL = 'F4F6F9';
 // ---------------------------------------------------------------------------
 
 type Row =
-  | { kind: 'text'; id: string; where: string; key: string; en: string; es: string; note?: string; bold?: boolean }
+  | { kind: 'text'; id: string; where: string; key: string; en: string; es: string; hi?: string; pa?: string; ur?: string; note?: string; bold?: boolean }
   | { kind: 'heading'; text: string; textEs?: string };
 
 interface Part {
@@ -198,7 +198,9 @@ const partScreens: Part = {
   rows: [
     { kind: 'heading', text: 'Header and footer (every screen)', textEs: 'Encabezado y pie de página' },
     uiRow(U, 'appTagline', 'Header, under the name “LexCourt”'),
-    uiRow(U, 'langToggle', 'Header: button that switches the language (shows the other language’s name)'),
+    uiRow(U, 'langLabel', 'Header: label of the language menu (read aloud by screen readers in all five languages)'),
+    uiRow(U, 'translationDraft', 'Below the short disclaimer, every screen, Hindi / Punjabi / Urdu only (empty in English and Spanish)'),
+    uiRow(U, 'voiceLangUnsupported', 'Start screen: shown when the browser cannot recognise speech in this language'),
     uiRow(U, 'footer', 'Footer, every screen'),
     { kind: 'heading', text: 'Start screen', textEs: 'Pantalla de inicio' },
     uiRow(U, 'startTitle', 'Start screen: title'),
@@ -350,7 +352,7 @@ const partReport: Part = {
     'New page (#/report). A five-step questionnaire (who, what happened, immigration court case, state, optional details). The app then shows which offices usually handle the problem, links to their official complaint forms, and builds a summary the user can copy. LexCourt never submits anything. The routing rules are in the table at the end of this part. All text is a draft that needs attorney review.',
   rows: toolRows('R2', [
     ['Report a problem', 'Reportar un problema', tEn.report, tEs.report, 'tools.report'],
-    ['Summary the user copies (language chosen by the user)', 'Resumen que el usuario copia', tEn.summary.en, tEn.summary.es, 'tools.summary'],
+    ['Summary the user copies (language chosen by the user)', 'Resumen que el usuario copia', SUMMARY.en, SUMMARY.es, 'summary'],
   ]).map((r) => (r.kind === 'text' ? { ...r, id: r.id.replace('R2-', 'Q-') } : r)),
 };
 
@@ -366,15 +368,59 @@ const partOther: Part = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// Hindi, Punjabi and Urdu columns: looked up by each row's source key, with a
+// check that the key gives the same English as the row (so columns can't drift).
+// ---------------------------------------------------------------------------
+
+const NEW_LANGS = ['hi', 'pa', 'ur'] as const;
+const FN_ARGS: Record<string, unknown[]> = {
+  reminderDescription: [true],
+  helpCaseStatus: [LINKS.en.caseStatusPhone],
+  ...SAMPLES,
+};
+
+function resolveKey(key: string, lang: Lang): string | undefined {
+  const m = key.match(/^(i18n|legal|tools|summary)\.(.+?)(\(.*\))?$/);
+  if (!m) return undefined;
+  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang] };
+  let v: unknown = roots[m[1]];
+  for (const part of m[2].match(/[^.[\]]+/g) ?? []) v = (v as Record<string, unknown>)?.[part];
+  if (typeof v === 'function') {
+    const name = m[2].split('.').pop()!;
+    return (v as (...a: unknown[]) => string)(...(FN_ARGS[name] ?? []));
+  }
+  return typeof v === 'string' ? v : undefined;
+}
+
+function fillNewLanguages(rows: Row[]) {
+  for (const r of rows) {
+    if (r.kind !== 'text') continue;
+    const en = resolveKey(r.key, 'en');
+    if (en === undefined) continue;
+    const enShown = r.en.replace(/^• /, '');
+    if (en !== enShown) throw new Error(`row ${r.id}: key ${r.key} gives different English than the row`);
+    for (const l of NEW_LANGS) {
+      const t = resolveKey(r.key, l);
+      if (t === undefined) throw new Error(`row ${r.id}: no ${l} text for ${r.key}`);
+      r[l] = r.en.startsWith('• ') ? `• ${t}` : t;
+    }
+  }
+}
+
 const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partOther];
+for (const part of PARTS) fillNewLanguages(part.rows);
+for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS) r[l] = '— (no separate page in this language yet; the English description is used)';
 
 // ---------------------------------------------------------------------------
 // Revision tracking: what changed in this draft, marked on each row
 // ---------------------------------------------------------------------------
 
-const REVISION = 'draft 2';
+const REVISION = 'draft 3';
 interface Change {
   n: number;
+  /** Which draft made the change (default: draft 2). */
+  rev?: string;
   what: string;
   kind: 'NEW' | 'CHANGED';
   keys: string[];
@@ -392,6 +438,8 @@ const CHANGES: Change[] = [
   { n: 10, kind: 'CHANGED', what: 'No warranty and Limitation of liability: reviewer note on Pennsylvania law (wording unchanged).', keys: ['legal.terms.sections[9].paragraphs[0]', 'legal.terms.sections[10].paragraphs[0]'] },
   { n: 11, kind: 'CHANGED', what: 'Terms: governed by Pennsylvania law; operator name and contact email placeholders.', keys: ['legal.terms.sections[14].paragraphs[0]'] },
   { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[6].paragraphs[0]'] },
+  { n: 14, rev: 'draft 3', kind: 'NEW', what: 'Hindi, Punjabi and Urdu: every piece of text translated (new columns). Immigration terms are kept in English in brackets. DRAFT, needs native speaker review.', keys: [] },
+  { n: 15, rev: 'draft 3', kind: 'NEW', what: 'Language menu (English, Español, हिन्दी, ਪੰਜਾਬੀ, اردو) replaces the language button; its label, the draft-translation notice, and a message when voice input does not support the language.', keys: ['i18n.langLabel', 'i18n.translationDraft', 'i18n.voiceLangUnsupported'] },
   { n: 13, kind: 'NEW', what: 'Spanish search description and home-screen description (served at /es/).', keys: ['index.html meta description (+ es/)', 'manifest.webmanifest description (+ es/)'] },
 ];
 /** Reviewer notes added in this draft. `decision` ones are also listed under “Decisions needed”. */
@@ -413,8 +461,8 @@ for (const part of PARTS)
     idOfKey.set(r.key, r.id);
     const notes: string[] = [];
     const c = changeOf.get(r.key);
-    if (c) notes.push(`${c.kind} in ${REVISION} (item ${c.n}) — draft, needs attorney review.`);
-    else if (RENUMBERED.includes(r.key)) notes.push(`Renumbered in ${REVISION} (new section 6 added before it).`);
+    if (c) notes.push(`${c.kind} in ${c.rev ?? 'draft 2'} (item ${c.n}) — draft, needs attorney review.`);
+    else if (RENUMBERED.includes(r.key)) notes.push('Renumbered in draft 2 (new section 6 added before it).');
     if (NOTES[r.key]) notes.push(NOTES[r.key].note);
     if (r.note) notes.push(r.note);
     if (notes.length) r.note = notes.join(' ');
@@ -455,17 +503,19 @@ for (const who of ['lawyer', 'accredited', 'nonlawyer', 'unsure'] as Who[])
 // Document building
 // ---------------------------------------------------------------------------
 
-const PLACEHOLDER = /(\[[A-Za-zÁÉÍÓÚáéíóú][^\]]*\])/g;
+const PLACEHOLDER = /(\[\p{L}[^\]]*\])/gu;
 
 /** Runs for a piece of app text, with [ATTORNEY REVIEW] placeholders highlighted. */
-function textRuns(text: string, opts: { size?: number; color?: string; bold?: boolean } = {}): TextRun[] {
+function textRuns(text: string, opts: { size?: number; color?: string; bold?: boolean; lang?: Lang } = {}): TextRun[] {
+  const rtl = opts.lang === 'ur';
+  const font = runFont(opts.lang);
   return text
     .split(PLACEHOLDER)
     .filter((s) => s !== '')
     .map((s) =>
-      /^\[[A-Za-zÁÉÍÓÚáéíóú][^\]]*\]$/.test(s)
-        ? new TextRun({ text: s, font: FONT, size: opts.size ?? 19, bold: true, shading: { type: ShadingType.CLEAR, color: 'auto', fill: 'FFF59D' }, color: INK })
-        : new TextRun({ text: s, font: FONT, size: opts.size ?? 19, color: opts.color ?? INK, bold: opts.bold }),
+      /^\[\p{L}[^\]]*\]$/u.test(s)
+        ? new TextRun({ text: s, font, size: opts.size ?? 19, bold: true, rightToLeft: rtl, shading: { type: ShadingType.CLEAR, color: 'auto', fill: 'FFF59D' }, color: INK })
+        : new TextRun({ text: s, font, size: opts.size ?? 19, color: opts.color ?? INK, bold: opts.bold, rightToLeft: rtl }),
     );
 }
 
@@ -477,11 +527,17 @@ const cellBorders = {
 };
 const margins = { top: 80, bottom: 80, left: 110, right: 110 };
 
-// Landscape US Letter, 0.75" margins → 15840 − 2×1080 = 13680 DXA of text width.
-const PAGE_W = 15840;
-const MARGIN = 1080;
+// Landscape US Legal (8.5" × 14"), 0.6" margins → 20160 − 2×864 = 18432 DXA of
+// text width: ID, location, five languages, reviewer notes.
+const PAGE_W = 20160;
+const MARGIN = 864;
 const TEXT_W = PAGE_W - 2 * MARGIN;
-const COLS = [760, 2000, 4280, 4280, 2360];
+const COLS = [620, 1700, 2900, 2900, 2900, 2900, 2900, 1612];
+const LANG_COLS: Lang[] = ['en', 'es', 'hi', 'pa', 'ur'];
+/** Fonts Word uses for each script (Windows names; Word substitutes on other systems). */
+const SCRIPT_FONT: Partial<Record<Lang, string>> = { hi: 'Nirmala UI', pa: 'Nirmala UI', ur: 'Urdu Typesetting' };
+const runFont = (lang?: Lang) =>
+  lang && SCRIPT_FONT[lang] ? { ascii: FONT, hAnsi: FONT, eastAsia: FONT, cs: SCRIPT_FONT[lang]! } : FONT;
 if (COLS.reduce((a, b) => a + b) !== TEXT_W) throw new Error('column widths must add up to the text width');
 
 function noteRuns(note?: string): TextRun[] {
@@ -505,20 +561,43 @@ function cell(children: Paragraph[], width: number, fill?: string, span?: number
   });
 }
 
-function p(runs: TextRun[], opts: { after?: number; keepNext?: boolean } = {}): Paragraph {
-  return new Paragraph({ children: runs, spacing: { before: 0, after: opts.after ?? 0, line: 264 }, keepNext: opts.keepNext });
+function p(runs: TextRun[], opts: { after?: number; keepNext?: boolean; rtl?: boolean } = {}): Paragraph {
+  return new Paragraph({
+    children: runs,
+    spacing: { before: 0, after: opts.after ?? 0, line: opts.rtl ? 300 : 264 },
+    keepNext: opts.keepNext,
+    bidirectional: opts.rtl,
+    alignment: opts.rtl ? AlignmentType.START : undefined,
+  });
 }
 
 function headerRow(labels: string[]): TableRow {
   return new TableRow({
     tableHeader: true,
     cantSplit: true,
-    children: labels.map((l, i) => cell([p([new TextRun({ text: l, font: FONT, size: 18, bold: true, color: BRAND })])], COLS[i], HEAD_FILL)),
+    children: labels.map((l, i) =>
+      cell(
+        l.split('\n').map((line, j) => p([new TextRun({ text: line, font: runFont(['hi', 'pa', 'ur'][i - 4] as Lang), size: j ? 14 : 18, bold: !j, color: j ? 'B42318' : BRAND })])),
+        COLS[i],
+        HEAD_FILL,
+      ),
+    ),
   });
 }
 
 function textTable(rows: Row[]): Table {
-  const trs: TableRow[] = [headerRow(['ID', 'Where it appears', 'English', 'Spanish (Español)', 'Reviewer notes'])];
+  const trs: TableRow[] = [
+    headerRow([
+      'ID',
+      'Where it appears',
+      'English',
+      'Spanish (Español)',
+      'Hindi (हिन्दी)\nDRAFT, needs native speaker review',
+      'Punjabi (ਪੰਜਾਬੀ)\nDRAFT, needs native speaker review',
+      'Urdu (اردو)\nDRAFT, needs native speaker review',
+      'Reviewer notes',
+    ]),
+  ];
   for (const r of rows) {
     if (r.kind === 'heading') {
       trs.push(
@@ -529,7 +608,7 @@ function textTable(rows: Row[]): Table {
               [p([new TextRun({ text: r.text, font: FONT, size: 19, bold: true, color: BRAND }), ...(r.textEs ? [new TextRun({ text: `  /  ${r.textEs}`, font: FONT, size: 19, color: MUTED })] : [])], { keepNext: true })],
               TEXT_W,
               SECTION_FILL,
-              5,
+              8,
             ),
           ],
         }),
@@ -538,7 +617,8 @@ function textTable(rows: Row[]): Table {
     }
     trs.push(
       new TableRow({
-        cantSplit: true,
+        // Five languages of a legal paragraph can be tall: let a row continue on the next page.
+        cantSplit: false,
         children: [
           cell([p([new TextRun({ text: r.id, font: FONT, size: 18, bold: true, color: BRAND })])], COLS[0]),
           cell(
@@ -548,9 +628,14 @@ function textTable(rows: Row[]): Table {
             ],
             COLS[1],
           ),
-          cell([p(textRuns(r.en, { bold: r.bold }))], COLS[2], r.bold ? SECTION_FILL : undefined),
-          cell([p(textRuns(r.es, { bold: r.bold }))], COLS[3], r.bold ? SECTION_FILL : undefined),
-          cell([p(noteRuns(r.note))], COLS[4]),
+          ...LANG_COLS.map((l, i) =>
+            cell(
+              [p(textRuns((r as Record<string, string | undefined>)[l] ?? '', { bold: r.bold, lang: l, size: 17 }), { rtl: l === 'ur' })],
+              COLS[2 + i],
+              r.bold ? SECTION_FILL : undefined,
+            ),
+          ),
+          cell([p(noteRuns(r.note))], COLS[7]),
         ],
       }),
     );
@@ -632,7 +717,7 @@ const metaTable = new Table({
     ['Prepared', today],
     ['App version', `Git commit ${commit}`],
     ['Terms version', TERMS_VERSION],
-    ['Languages', 'English and Spanish, side by side'],
+    ['Languages', 'English and Spanish, plus draft Hindi, Punjabi and Urdu translations, side by side'],
     ['Contents', `${textRowCount} pieces of user-facing text, each with an ID`],
   ].map(
     ([k, v]) =>
@@ -648,7 +733,7 @@ const metaTable = new Table({
 const intro: (Paragraph | Table)[] = [
   new Paragraph({ children: [new TextRun({ text: 'DRAFT — FOR ATTORNEY REVIEW', font: FONT, size: 20, bold: true, color: 'B42318' })], spacing: { after: 120 } }),
   new Paragraph({ text: 'LexCourt: All User-Facing Text', heading: HeadingLevel.TITLE }),
-  new Paragraph({ children: [new TextRun({ text: 'English and Spanish, including the explanations, disclaimer, Terms of Use and Privacy Policy', font: FONT, size: 26, color: MUTED })], spacing: { after: 280 } }),
+  new Paragraph({ children: [new TextRun({ text: 'English, Spanish, Hindi, Punjabi and Urdu, including the explanations, disclaimer, Terms of Use and Privacy Policy', font: FONT, size: 26, color: MUTED })], spacing: { after: 280 } }),
   metaTable,
   new Paragraph({ spacing: { after: 120 }, children: [] }),
 
@@ -660,14 +745,22 @@ const intro: (Paragraph | Table)[] = [
     'Everything runs on the user’s own phone or computer. The notice is never uploaded, and the app has no accounts, analytics or cookies. The only thing it stores is a note on the device that the user accepted the terms. The details the app extracts are automatic guesses; users can correct them, and the app tells them to check every detail against the notice and the court.',
   ),
 
-  h2(`What changed in this revision (${REVISION})`),
-  body(`Every new or changed row is marked “NEW in ${REVISION}” or “CHANGED in ${REVISION}” in its Reviewer notes column. All of it is a draft that needs attorney review. Adding a Terms section renumbered some rows, so row IDs differ from the previous version of this document; use the IDs below.`, 160),
+  h2(`What changed since the first review copy (now ${REVISION})`),
+  body('Every new or changed row is marked “NEW in draft …” or “CHANGED in draft …” in its Reviewer notes column. All of it is a draft that needs attorney review. Adding a Terms section in draft 2 renumbered some rows, so row IDs differ from the first version of this document; use the IDs below.', 160),
   simpleTable(
-    ['#', 'Change', 'Rows (new IDs)'],
-    CHANGES.map((c) => [String(c.n), `${c.kind}: ${c.what}`, c.keys.map((k) => idOfKey.get(k)).join(', ')]),
-    [600, 10080, 3000],
+    ['#', 'Draft', 'Change', 'Rows (new IDs)'],
+    [...CHANGES]
+      .sort((a, b) => a.n - b.n)
+      .map((c) => [String(c.n), c.rev ?? 'draft 2', `${c.kind}: ${c.what}`, c.keys.length ? c.keys.map((k) => idOfKey.get(k)).join(', ') : 'Hindi, Punjabi and Urdu columns, every row']),
+    [600, 1200, 12632, 4000],
   ),
   new Paragraph({ spacing: { after: 120 }, children: [] }),
+
+  h2('Hindi, Punjabi and Urdu columns'),
+  body('These translations are drafts. They have not been checked by native speakers, and the legal text in them has not been reviewed by an attorney. Immigration terms such as “Notice to Appear”, “master calendar hearing”, “A-Number” and “EOIR-33/IC” are kept in English in brackets after the translation, so people can match them to their paper notice. In the app, Hindi, Punjabi and Urdu screens show a notice saying the translation is a draft.', 120),
+  bullet('Native speakers should confirm each translation says the same thing as the English, in plain words people will understand, with no change in legal meaning.'),
+  bullet('Urdu is written right to left. In the app, English terms inside Urdu text are kept in the correct order with invisible direction marks; Word may show them slightly differently.'),
+  bullet('If you would like the legal text (Parts 1–4) in these languages reviewed by a qualified legal translator as well, the same rows can be shared with them.'),
 
   h2('What we are asking you to review'),
   bullet(`Disclaimer, Terms of Use and Privacy Policy (Parts 1–4): adequacy and enforceability, including the first-use checkbox acceptance (${CHECKBOX_ID}) and the no-warranty and liability clauses.`),
@@ -675,6 +768,7 @@ const intro: (Paragraph | Table)[] = [
   bullet('Accuracy of the legal statements, for example: in absentia orders for missed hearings; the 5-day deadline to file Form EOIR-33/IC after moving; the right to counsel at no expense to the government; free interpreters at hearings; the descriptions of master calendar and individual hearings, Notices to Appear and Notices of Hearing.'),
   bullet('Privacy Policy accuracy against how the app works (described above), and any notices required by state privacy laws.'),
   bullet('Spanish: whether each Spanish text says the same thing as the English, with no change in legal meaning. A qualified legal translator should also review it.'),
+  bullet('Hindi, Punjabi and Urdu (new): the Terms do not yet say which language version controls if the translations differ from the English. Should they (for example, “the English version governs”)? And is accepting the Terms in a draft translation acceptable before the translations are reviewed?'),
   bullet('New “Check a representative” and “Report a problem” pages (Parts 9–10): accuracy of how to verify lawyers and accredited representatives, the notario warning signs, which offices handle which complaints (routing table), and the wording around filing complaints, including the note for people worried about how a complaint could affect them.'),
   bullet('The decisions listed below, which the draft leaves open.'),
 
@@ -749,7 +843,7 @@ partsContent.push(
 const doc = new Document({
   creator: 'LexCourt',
   title: 'LexCourt: All User-Facing Text (draft for attorney review)',
-  description: 'English and Spanish user-facing text of the LexCourt app for legal review.',
+  description: 'English, Spanish, Hindi, Punjabi and Urdu user-facing text of the LexCourt app for legal review.',
   styles: {
     default: { document: { run: { font: FONT, size: 21, color: INK } } },
     paragraphStyles: [
@@ -770,7 +864,7 @@ const doc = new Document({
     {
       properties: {
         page: {
-          size: { width: 12240, height: 15840, orientation: PageOrientation.LANDSCAPE },
+          size: { width: 12240, height: 20160, orientation: PageOrientation.LANDSCAPE },
           margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN, header: 500, footer: 500 },
         },
       },
@@ -780,7 +874,7 @@ const doc = new Document({
             new Paragraph({
               border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: BORDER, space: 4 } },
               children: [
-                new TextRun({ text: 'LexCourt — user-facing text (EN/ES)  ·  ', font: FONT, size: 16, color: MUTED }),
+                new TextRun({ text: 'LexCourt — user-facing text (EN / ES / HI / PA / UR)  ·  ', font: FONT, size: 16, color: MUTED }),
                 new TextRun({ text: 'DRAFT — confidential, prepared for legal review', font: FONT, size: 16, bold: true, color: 'B42318' }),
               ],
             }),

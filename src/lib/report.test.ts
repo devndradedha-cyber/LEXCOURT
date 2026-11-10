@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_DETAILS, ISSUES, buildSummary, recommend, type Answers, type AuthorityId } from './report';
-import { TOOLS } from './toolsText';
+import { SUMMARY, TOOLS } from './toolsText';
 import { OFFICIAL, STATE_LAWYER_LOOKUPS, US_STATES } from './resources';
 
 const base = (over: Partial<Answers>): Answers => ({ who: null, issues: [], court: null, state: null, details: { ...EMPTY_DETAILS }, ...over });
@@ -46,7 +46,7 @@ describe('recommend', () => {
     for (const who of ['lawyer', 'accredited', 'nonlawyer', 'unsure'] as const)
       for (const court of ['yes', 'no', 'unsure'] as const)
         for (const r of recommend(base({ who, court, issues: ['fakeLawyer', 'freeForms', 'tookMoney'] })))
-          for (const lang of ['en', 'es'] as const) {
+          for (const lang of ['en', 'es', 'hi', 'pa', 'ur'] as const) {
             const t = TOOLS[lang].report;
             expect(t.authorities[r.id].name).toBeTruthy();
             r.reasons.forEach((reason) => expect(t.reasons[reason], `${lang}.${reason}`).toBeTruthy());
@@ -64,30 +64,33 @@ describe('buildSummary', () => {
   });
 
   it('includes what the user entered and selected, in the chosen language', () => {
-    const s = buildSummary(answers, TOOLS.en.summary.en, 'Texas');
+    const s = buildSummary(answers, SUMMARY.en, 'Texas');
     expect(s).toContain('Person: Juan Pérez (notario / immigration consultant, not a lawyer)');
     expect(s).toContain('State: Texas');
     expect(s).toContain('Money paid: $1,500 cash');
     expect(s).toContain('- They said they were a lawyer or could represent me, but they are not.');
     expect(s).toContain('- They took my money and did not do the work.');
     expect(s).toContain('He said he was a lawyer.');
-    const es = buildSummary(answers, TOOLS.en.summary.es, 'Texas');
+    const es = buildSummary(answers, SUMMARY.es, 'Texas');
     expect(es).toContain('Persona: Juan Pérez (notario / consultor de inmigración, no es abogado)');
     expect(es).toContain('- Tomó mi dinero y no hizo el trabajo.');
   });
 
   it('leaves out blank fields and the "something else" option', () => {
-    const s = buildSummary(answers, TOOLS.en.summary.en, 'Texas');
+    const s = buildSummary(answers, SUMMARY.en, 'Texas');
     expect(s).not.toMatch(/Business:|Documents I have:|When:/);
     expect(s).not.toMatch(/^- $/m);
   });
 });
 
 describe('tools text', () => {
-  it('English and Spanish have the same structure', () => {
+  it('every language has the same structure as English', () => {
     const shape = (o: unknown): unknown =>
       Array.isArray(o) ? o.map(shape) : typeof o === 'object' && o ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, shape(v)])) : typeof o;
-    expect(shape(TOOLS.es)).toEqual(shape(TOOLS.en));
+    for (const lang of ['es', 'hi', 'pa', 'ur'] as const) {
+      expect(shape(TOOLS[lang]), lang).toEqual(shape(TOOLS.en));
+      expect(shape(SUMMARY[lang]), lang).toEqual(shape(SUMMARY.en));
+    }
   });
 
   it('says it is information, not legal advice, and is marked as a draft', () => {
@@ -122,6 +125,6 @@ describe('official links', () => {
   });
 
   it('lists every issue in both languages', () => {
-    for (const lang of ['en', 'es'] as const) for (const i of ISSUES) expect(TOOLS[lang].report.issues[i]).toBeTruthy();
+    for (const lang of ['en', 'es', 'hi', 'pa', 'ur'] as const) for (const i of ISSUES) expect(TOOLS[lang].report.issues[i]).toBeTruthy();
   });
 });

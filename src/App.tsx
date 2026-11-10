@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { extractNoticeFacts, type NoticeFacts } from './lib/extract';
-import { STRINGS, detectLang, type Lang } from './lib/i18n';
+import { LANGS, STRINGS, detectLang, langInfo, type Lang } from './lib/i18n';
 import { IS_DRAFT, LEGAL, hasAcceptedTerms, recordTermsAccepted, type LegalDoc } from './lib/legal';
 import { fileToText, type Progress } from './lib/readFile';
 import { downloadIcs, googleCalendarUrl, type ReminderInput } from './lib/reminders';
@@ -51,7 +51,9 @@ export default function App() {
   const resultRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    document.documentElement.lang = lang;
+    const info = langInfo(lang);
+    document.documentElement.lang = info.locale;
+    document.documentElement.dir = info.dir;
   }, [lang]);
 
   useEffect(() => {
@@ -105,12 +107,30 @@ export default function App() {
             <div className="brand-tag">{t.appTagline}</div>
           </div>
         </div>
-        <button className="lang" onClick={() => setLang(lang === 'en' ? 'es' : 'en')} lang={lang === 'en' ? 'es' : 'en'}>
-          {t.langToggle}
-        </button>
+        <label className="lang">
+          <span aria-hidden="true">🌐</span>
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value as Lang)}
+            // Labelled in every language, so anyone can find it.
+            aria-label={LANGS.map((l) => STRINGS[l.code].langLabel).join(' / ')}
+          >
+            {LANGS.map((l) => (
+              <option key={l.code} value={l.code} lang={l.locale} dir={l.dir}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </header>
 
       <ShortDisclaimer lang={lang} />
+
+      {t.translationDraft && (
+        <p className="translation-draft" role="note">
+          {t.translationDraft}
+        </p>
+      )}
 
       {!isLegal(route) && <ToolNav lang={lang} route={route} />}
 
@@ -316,7 +336,7 @@ function StartScreen({
     setVoiceError(null);
     const base = text ? text.trim() + ' ' : '';
     listener.current = startListening(
-      lang,
+      langInfo(lang).speech,
       (finalText, interimText) => {
         setText(base + finalText);
         setInterim(interimText);
@@ -324,7 +344,8 @@ function StartScreen({
       (err) => {
         setListening(false);
         setInterim('');
-        if (err && err !== 'no-speech' && err !== 'aborted') setVoiceError(t.voiceUnsupported);
+        if (err === 'language-not-supported') setVoiceError(t.voiceLangUnsupported);
+        else if (err && err !== 'no-speech' && err !== 'aborted') setVoiceError(t.voiceUnsupported);
       },
     );
     setListening(listener.current !== null);
@@ -356,6 +377,7 @@ function StartScreen({
         rows={5}
         aria-label={t.orDescribe}
         readOnly={listening}
+        dir="auto"
       />
       <div className="row">
         {canSpeak && (
@@ -374,9 +396,14 @@ function StartScreen({
   );
 }
 
+/** U+200F RIGHT-TO-LEFT MARK: tells calendar apps that Urdu text runs right to left. */
+function rtlMark(lang: Lang): string {
+  return langInfo(lang).dir === 'rtl' ? '\u200F' : '';
+}
+
 function formatDate(date: string, lang: Lang): string {
   const [y, m, d] = date.split('-').map(Number);
-  return new Intl.DateTimeFormat(lang === 'es' ? 'es-US' : 'en-US', {
+  return new Intl.DateTimeFormat(langInfo(lang).locale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -386,7 +413,7 @@ function formatDate(date: string, lang: Lang): string {
 
 function formatTime(time: string, lang: Lang): string {
   const [h, m] = time.split(':').map(Number);
-  return new Intl.DateTimeFormat(lang === 'es' ? 'es-US' : 'en-US', { hour: 'numeric', minute: '2-digit' }).format(
+  return new Intl.DateTimeFormat(langInfo(lang).locale, { hour: 'numeric', minute: '2-digit' }).format(
     new Date(2000, 0, 1, h, m),
   );
 }
@@ -415,9 +442,9 @@ function Result({
     ? {
         date: facts.date,
         time: facts.time,
-        title: t.reminderTitle,
+        title: rtlMark(lang) + t.reminderTitle,
         location: facts.courtAddress?.replace(/\n/g, ', ') ?? null,
-        description: t.reminderDescription(!!facts.aNumber),
+        description: rtlMark(lang) + t.reminderDescription(!!facts.aNumber),
       }
     : null;
 
@@ -432,7 +459,13 @@ function Result({
         {facts.date && (
           <p className="big-date">
             {formatDate(facts.date, lang)}
-            {facts.time && <> · {formatTime(facts.time, lang)}</>}
+            {facts.time && (
+              <>
+                {' · '}
+                {/* Isolated so "8:30 AM" keeps its order inside Urdu (right-to-left) text. */}
+                <bdi dir="ltr">{formatTime(facts.time, lang)}</bdi>
+              </>
+            )}
           </p>
         )}
 
@@ -449,13 +482,14 @@ function Result({
           </label>
           <label>
             {t.fieldCourt}
-            <textarea rows={3} value={facts.courtAddress ?? ''} onChange={(e) => update({ courtAddress: e.target.value || null })} />
+            <textarea dir="auto" rows={3} value={facts.courtAddress ?? ''} onChange={(e) => update({ courtAddress: e.target.value || null })} />
             {!facts.courtAddress && <span className="missing">{t.notFound}</span>}
           </label>
           <label>
             {t.fieldANumber}
             <input
               inputMode="numeric"
+              dir="ltr"
               autoComplete="off"
               value={facts.aNumber ?? ''}
               onChange={(e) => update({ aNumber: e.target.value || null })}

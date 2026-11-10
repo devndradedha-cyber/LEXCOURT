@@ -1,15 +1,49 @@
 import type { HearingType, NoticeType } from './extract';
 
-export type Lang = 'en' | 'es';
+import { hiStrings } from './locales/hi';
+import { paStrings } from './locales/pa';
+import { urStrings } from './locales/ur';
+
+export type Lang = 'en' | 'es' | 'hi' | 'pa' | 'ur';
+
+export interface LangInfo {
+  code: Lang;
+  /** Name shown in the language menu, in its own language and script. */
+  name: string;
+  /** English name, for documents and code. */
+  english: string;
+  dir: 'ltr' | 'rtl';
+  /** BCP 47 tag for <html lang>, dates and times. */
+  locale: string;
+  /** Language tag for the browser's speech recognition. */
+  speech: string;
+  /** True while the translation has not been checked by a native speaker. */
+  draftTranslation: boolean;
+}
+
+export const LANGS: LangInfo[] = [
+  { code: 'en', name: 'English', english: 'English', dir: 'ltr', locale: 'en-US', speech: 'en-US', draftTranslation: false },
+  { code: 'es', name: 'Español', english: 'Spanish', dir: 'ltr', locale: 'es-US', speech: 'es-US', draftTranslation: false },
+  { code: 'hi', name: 'हिन्दी', english: 'Hindi', dir: 'ltr', locale: 'hi-IN', speech: 'hi-IN', draftTranslation: true },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ', english: 'Punjabi (Gurmukhi)', dir: 'ltr', locale: 'pa-Guru-IN', speech: 'pa-Guru-IN', draftTranslation: true },
+  { code: 'ur', name: 'اردو', english: 'Urdu', dir: 'rtl', locale: 'ur-PK', speech: 'ur-PK', draftTranslation: true },
+];
+
+export const langInfo = (l: Lang): LangInfo => LANGS.find((x) => x.code === l)!;
 
 export interface Explanation {
   title: string;
   body: string[];
 }
 
-interface Strings {
+export interface Strings {
   appTagline: string;
-  langToggle: string;
+  /** Label of the language menu. */
+  langLabel: string;
+  /** Shown on every screen while a translation is a draft (hi, pa, ur). Empty for en/es. */
+  translationDraft: string;
+  /** Voice input does not support this language in the user's browser. */
+  voiceLangUnsupported: string;
   privacyTitle: string;
   privacy: string[];
   startTitle: string;
@@ -66,7 +100,9 @@ interface Strings {
 
 const en: Strings = {
   appTagline: 'Understand your immigration court notice',
-  langToggle: 'Español',
+  langLabel: 'Language',
+  translationDraft: '',
+  voiceLangUnsupported: 'Voice input is not available for English in this browser. You can type instead.',
   privacyTitle: 'Your privacy',
   privacy: [
     'Your notice is read on this phone or computer. We do not upload it, and we do not keep it.',
@@ -187,7 +223,9 @@ const en: Strings = {
 
 const es: Strings = {
   appTagline: 'Entienda su aviso de la corte de inmigración',
-  langToggle: 'English',
+  langLabel: 'Idioma',
+  translationDraft: '',
+  voiceLangUnsupported: 'La entrada por voz no está disponible en español en este navegador. Puede escribir.',
   privacyTitle: 'Su privacidad',
   privacy: [
     'Su aviso se lee en este teléfono o computadora. No lo subimos a internet y no lo guardamos.',
@@ -306,10 +344,14 @@ const es: Strings = {
   },
 };
 
-export const STRINGS: Record<Lang, Strings> = { en, es };
+export const STRINGS: Record<Lang, Strings> = { en, es, hi: hiStrings, pa: paStrings, ur: urStrings };
 
 export function detectLang(): Lang {
   if (typeof window !== 'undefined' && /^\/es(\/|$)/.test(window.location.pathname)) return 'es';
   if (typeof navigator === 'undefined') return 'en';
-  return navigator.language?.toLowerCase().startsWith('es') ? 'es' : 'en';
+  for (const pref of navigator.languages ?? [navigator.language]) {
+    const code = pref?.toLowerCase().slice(0, 2);
+    if (LANGS.some((l) => l.code === code)) return code as Lang;
+  }
+  return 'en';
 }
