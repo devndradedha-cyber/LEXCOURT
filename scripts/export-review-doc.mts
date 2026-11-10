@@ -34,7 +34,9 @@ import {
 } from 'docx';
 import { STRINGS } from '../src/lib/i18n';
 import { LEGAL, TERMS_VERSION, type LegalDoc } from '../src/lib/legal';
-import { LINKS } from '../src/lib/resources';
+import { LINKS, OFFICIAL, STATE_LAWYER_LOOKUPS } from '../src/lib/resources';
+import { recommend, type Answers, type Issue, type Who } from '../src/lib/report';
+import { TOOLS } from '../src/lib/toolsText';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'review', 'LexCourt-text-for-attorney-review.docx');
@@ -280,7 +282,108 @@ const linkRows: [string, string, string][] = [
   ['Online change of address, Form EOIR-33/IC', LINKS.en.changeOfAddress, LINKS.es.changeOfAddress],
 ];
 
-const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp];
+// Parts 9–10: "Check a representative" and "Report a problem" (draft) ----------
+
+/** Example values used to show text that is filled in by the app. */
+const SAMPLES: Record<string, unknown[]> = {
+  stepsTitle: ['“Juan Pérez”'],
+  stateLookup: ['California'],
+  signsSome: [2],
+  stepOf: [2, 5],
+  stateAgFor: ['Texas'],
+};
+const SAMPLE_NOTE: Record<string, string> = {
+  stepsTitle: 'Shows the name the user typed, or “this person”.',
+  stateLookup: 'Shows the state the user chose.',
+  signsSome: 'Shows how many warning signs were checked (example: 2).',
+  stepOf: 'Example: step 2 of 5.',
+  stateAgFor: 'Shows the state the user chose.',
+};
+
+function flatten(prefix: string, next: () => string, a: unknown, b: unknown, path: string, where: string, rows: Row[]) {
+  if (typeof a === 'string') {
+    if (a) rows.push({ kind: 'text', id: next(), where, key: path, en: a, es: b as string });
+    return;
+  }
+  if (typeof a === 'function') {
+    const key = path.split('.').pop()!;
+    const args = SAMPLES[key] ?? [];
+    rows.push({
+      kind: 'text', id: next(), where, key: `${path}(…)`,
+      en: (a as (...x: unknown[]) => string)(...args), es: (b as (...x: unknown[]) => string)(...args), note: SAMPLE_NOTE[key],
+    });
+    return;
+  }
+  if (Array.isArray(a)) {
+    a.forEach((v, i) => flatten(prefix, next, v, (b as unknown[])[i], `${path}[${i}]`, `${where} (item ${i + 1} of ${a.length})`, rows));
+    return;
+  }
+  if (a && typeof a === 'object')
+    for (const [k, v] of Object.entries(a)) flatten(prefix, next, v, (b as Record<string, unknown>)[k], `${path}.${k}`, where, rows);
+}
+
+function toolRows(prefix: string, sections: [string, string, unknown, unknown, string][]): Row[] {
+  const next = counter(prefix);
+  const rows: Row[] = [];
+  for (const [heading, headingEs, a, b, path] of sections) {
+    rows.push({ kind: 'heading', text: heading, textEs: headingEs });
+    flatten(prefix, next, a, b, path, heading, rows);
+  }
+  return rows;
+}
+
+const tEn = TOOLS.en;
+const tEs = TOOLS.es;
+const partCheck: Part = {
+  title: 'Check a representative (new, draft)',
+  intro:
+    'New page (#/check). The user can type the name of their lawyer or representative and say what they claim to be. LexCourt does not search for them: it explains how to check, links to the official lists, and shows a checklist of notario-fraud warning signs. Nothing is stored or sent. All text is a draft that needs attorney review.',
+  rows: toolRows('C', [
+    ['Tabs (top of the Notice Reader, Check and Report pages)', 'Pestañas', tEn.nav, tEs.nav, 'tools.nav'],
+    ['Shared notices on both new pages', 'Avisos comunes', { draftBadge: tEn.draftBadge, draftNotice: tEn.draftNotice, infoNotAdvice: tEn.infoNotAdvice, copy: tEn.copy, copied: tEn.copied, copyFailed: tEn.copyFailed, openNewTab: tEn.openNewTab }, { draftBadge: tEs.draftBadge, draftNotice: tEs.draftNotice, infoNotAdvice: tEs.infoNotAdvice, copy: tEs.copy, copied: tEs.copied, copyFailed: tEs.copyFailed, openNewTab: tEs.openNewTab }, 'tools'],
+    ['Check a representative', 'Revisar un representante', tEn.check, tEs.check, 'tools.check'],
+  ]),
+};
+const partReport: Part = {
+  title: 'Report a problem (new, draft)',
+  intro:
+    'New page (#/report). A five-step questionnaire (who, what happened, immigration court case, state, optional details). The app then shows which offices usually handle the problem, links to their official complaint forms, and builds a summary the user can copy. LexCourt never submits anything. The routing rules are in the table at the end of this part. All text is a draft that needs attorney review.',
+  rows: toolRows('R2', [
+    ['Report a problem', 'Reportar un problema', tEn.report, tEs.report, 'tools.report'],
+    ['Summary the user copies (language chosen by the user)', 'Resumen que el usuario copia', tEn.summary.en, tEn.summary.es, 'tools.summary'],
+  ]).map((r) => (r.kind === 'text' ? { ...r, id: r.id.replace('R2-', 'Q-') } : r)),
+};
+
+const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport];
+
+// Routing table: which offices are shown for each kind of answer.
+const WHO_LABEL: Record<Who, string> = { lawyer: 'Lawyer', accredited: 'Accredited representative', nonlawyer: 'Notario / non-lawyer', unsure: 'Not sure' };
+const AUTH_LABEL: Record<string, string> = {
+  stateDiscipline: 'State lawyer discipline office',
+  eoirDiscipline: 'EOIR Disciplinary Counsel (Form EOIR-44)',
+  eoirFraud: 'EOIR Fraud & Abuse Prevention Program',
+  stateAG: 'State attorney general',
+  ftc: 'FTC',
+};
+const ISSUE_SETS: [string, Issue[]][] = [
+  ['Missed a deadline', ['missedDeadline']],
+  ['Charged for free forms', ['freeForms']],
+  ['Pretended to be a lawyer + took money', ['fakeLawyer', 'tookMoney']],
+];
+const routingRows: string[][] = [];
+for (const who of ['lawyer', 'accredited', 'nonlawyer', 'unsure'] as Who[])
+  for (const court of ['yes', 'no'] as const)
+    for (const [label, issues] of ISSUE_SETS) {
+      const a: Answers = { who, issues, court, state: null, details: { name: '', business: '', contact: '', dates: '', amountPaid: '', story: '', documents: '' } };
+      const r = recommend(a);
+      routingRows.push([
+        WHO_LABEL[who],
+        court === 'yes' ? 'Yes' : 'No',
+        label,
+        r.filter((x) => x.priority === 'primary').map((x) => AUTH_LABEL[x.id]).join('; ') || '—',
+        r.filter((x) => x.priority === 'also').map((x) => AUTH_LABEL[x.id]).join('; ') || '—',
+      ]);
+    }
 
 // ---------------------------------------------------------------------------
 // Document building
@@ -379,6 +482,24 @@ function textTable(rows: Row[]): Table {
   return new Table({ width: { size: TEXT_W, type: WidthType.DXA }, columnWidths: COLS, rows: trs });
 }
 
+function simpleTable(head: string[], rows: string[][], widths: number[]): Table {
+  const mk = (cells: string[], isHead = false) =>
+    new TableRow({
+      tableHeader: isHead,
+      cantSplit: true,
+      children: cells.map((c, i) =>
+        new TableCell({
+          children: [p([new TextRun({ text: c, font: !isHead && /^(https?:|[A-Za-z.]+@)/.test(c) ? 'Consolas' : FONT, size: isHead ? 18 : 17, bold: isHead, color: isHead ? BRAND : INK })])],
+          width: { size: widths[i], type: WidthType.DXA },
+          borders: cellBorders,
+          margins,
+          shading: isHead ? { type: ShadingType.CLEAR, color: 'auto', fill: HEAD_FILL } : undefined,
+        }),
+      ),
+    });
+  return new Table({ width: { size: widths.reduce((x, y) => x + y), type: WidthType.DXA }, columnWidths: widths, rows: [mk(head, true), ...rows.map((r) => mk(r))] });
+}
+
 function linksTable(): Table {
   const widths = [3880, 4900, 4900];
   const row = (cells: string[], head = false) =>
@@ -431,7 +552,7 @@ const metaTable = new Table({
   columnWidths: [2600, 6400],
   rows: [
     ['Prepared', today],
-    ['App version', `Git commit ${commit} (branch main, the live version)`],
+    ['App version', `Git commit ${commit}`],
     ['Terms version', TERMS_VERSION],
     ['Languages', 'English and Spanish, side by side'],
     ['Contents', `${textRowCount} pieces of user-facing text, each with an ID`],
@@ -467,6 +588,7 @@ const intro: (Paragraph | Table)[] = [
   bullet('Accuracy of the legal statements, for example: in absentia orders for missed hearings; the 5-day deadline to file Form EOIR-33/IC after moving; the right to counsel at no expense to the government; free interpreters at hearings; the descriptions of master calendar and individual hearings, Notices to Appear and Notices of Hearing.'),
   bullet('Privacy Policy accuracy against how the app works (described above), and any notices required by state privacy laws.'),
   bullet('Spanish: whether each Spanish text says the same thing as the English, with no change in legal meaning. A qualified legal translator should also review it.'),
+  bullet('New “Check a representative” and “Report a problem” pages (Parts 9–10): accuracy of how to verify lawyers and accredited representatives, the notario warning signs, which offices handle which complaints (routing table), and the wording around filing complaints, including the note for people worried about how a complaint could affect them.'),
   bullet('The decisions listed below, which the draft leaves open.'),
 
   h2('Decisions needed'),
@@ -487,6 +609,41 @@ const intro: (Paragraph | Table)[] = [
 const partsContent: (Paragraph | Table)[] = [];
 PARTS.forEach((part, i) => {
   partsContent.push(h1(`Part ${i + 1}. ${part.title}`), body(part.intro, 200), textTable(part.rows));
+  if (part === partCheck) {
+    partsContent.push(
+      new Paragraph({ children: [], spacing: { after: 120 } }),
+      h2('Links used on this page'),
+      simpleTable(['Resource', 'Link'], [
+        ['EOIR roster of recognized organizations and accredited representatives', OFFICIAL.accreditedRoster],
+        ['EOIR list of currently disciplined practitioners', OFFICIAL.disciplinedList],
+        ['EOIR list of previously disciplined practitioners', OFFICIAL.previouslyDisciplinedList],
+        ['ABA page with the Directory of State Disciplinary Agencies', OFFICIAL.abaDisciplineDirectory],
+        ...Object.values(STATE_LAWYER_LOOKUPS).map((l) => [l.name, l.url]),
+      ], [5200, 8480]),
+      body('Official lawyer searches are linked for California, Florida, Illinois, New Jersey, New York and Texas. For other states the page points to the ABA directory of state lawyer regulators.'),
+    );
+  }
+  if (part === partReport) {
+    partsContent.push(
+      new Paragraph({ children: [], spacing: { after: 120 } }),
+      h2('Routing rules: which offices are shown'),
+      body('Generated from the app’s routing code (src/lib/report.ts). “Start here” offices are listed first; “Also” offices are shown under “You may also report to”. Please check that each office is appropriate for each situation. For a lawyer, answering “Not sure” about an immigration court case shows EOIR Disciplinary Counsel under “Also”.', 160),
+      simpleTable(['Who', 'Immigration court case?', 'What happened (example)', 'Start here', 'Also'], routingRows, [2200, 1500, 2900, 3880, 3200]),
+      new Paragraph({ children: [], spacing: { after: 120 } }),
+      h2('Complaint links used on this page'),
+      simpleTable(['Office', 'Link or address'], [
+        ['Form EOIR-44 (English)', OFFICIAL.eoir44.en],
+        ['Form EOIR-44 (Spanish)', OFFICIAL.eoir44.es],
+        ['EOIR Disciplinary Counsel email', OFFICIAL.eoirDisciplineEmail],
+        ['EOIR Fraud & Abuse Prevention Program', OFFICIAL.eoirFraudProgram],
+        ['EOIR Fraud Program email', OFFICIAL.eoirFraudEmail],
+        ['FTC (English)', OFFICIAL.ftcReport.en],
+        ['FTC (Spanish)', OFFICIAL.ftcReport.es],
+        ['NAAG — find your state attorney general', OFFICIAL.naagFindAg],
+        ['ABA — Directory of State Disciplinary Agencies', OFFICIAL.abaDisciplineDirectory],
+      ], [5200, 8480]),
+    );
+  }
   if (part === partHelp) {
     partsContent.push(
       new Paragraph({ children: [], spacing: { after: 120 } }),

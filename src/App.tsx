@@ -6,15 +6,22 @@ import { fileToText, type Progress } from './lib/readFile';
 import { downloadIcs, googleCalendarUrl, type ReminderInput } from './lib/reminders';
 import { LINKS } from './lib/resources';
 import { speechSupported, startListening, type Listener } from './lib/speech';
+import { TOOLS } from './lib/toolsText';
+import { CheckRepresentative } from './components/CheckRepresentative';
+import { ReportProblem } from './components/ReportProblem';
 
 type Phase = { kind: 'start' } | { kind: 'working'; label: string; fraction: number } | { kind: 'result' };
 
-type Route = 'home' | 'disclaimer' | 'terms' | 'privacy';
+type LegalRoute = 'disclaimer' | 'terms' | 'privacy';
+type ToolRoute = 'home' | 'check' | 'report';
+type Route = ToolRoute | LegalRoute;
 const LEGAL_ROUTES: Route[] = ['disclaimer', 'terms', 'privacy'];
+const TOOL_ROUTES: Route[] = ['check', 'report'];
+const isLegal = (r: Route): r is LegalRoute => LEGAL_ROUTES.includes(r);
 
 function readRoute(): Route {
   const r = window.location.hash.replace(/^#\/?/, '') as Route;
-  return LEGAL_ROUTES.includes(r) ? r : 'home';
+  return LEGAL_ROUTES.includes(r) || TOOL_ROUTES.includes(r) ? r : 'home';
 }
 
 /** Simple hash routing (#/terms, #/privacy, #/disclaimer) so pages work on any static host. */
@@ -105,10 +112,12 @@ export default function App() {
 
       <ShortDisclaimer lang={lang} />
 
-      <main>
-        {route !== 'home' && <LegalPage lang={lang} doc={legal[route]} />}
+      {!isLegal(route) && <ToolNav lang={lang} route={route} />}
 
-        {route === 'home' && !accepted && (
+      <main>
+        {isLegal(route) && <LegalPage lang={lang} doc={legal[route]} />}
+
+        {!isLegal(route) && !accepted && (
           <AcceptTerms
             lang={lang}
             onAccept={() => {
@@ -137,7 +146,13 @@ export default function App() {
           </>
         )}
 
-        {route === 'home' && <LegalHelp lang={lang} />}
+        {route === 'check' && accepted && (
+          <CheckRepresentative lang={lang} onReport={() => (window.location.hash = '#/report')} />
+        )}
+
+        {route === 'report' && accepted && <ReportProblem lang={lang} />}
+
+        {!isLegal(route) && <LegalHelp lang={lang} />}
 
         {route === 'home' && (
           <section className="card subtle" aria-labelledby="privacy-title">
@@ -162,6 +177,25 @@ export default function App() {
         {IS_DRAFT && <p className="draft-inline">{legal.draftBadge}</p>}
       </footer>
     </>
+  );
+}
+
+/** Tabs for the three tools. Plain links, so the browser's back button works. */
+function ToolNav({ lang, route }: { lang: Lang; route: ToolRoute }) {
+  const n = TOOLS[lang].nav;
+  const tabs: [ToolRoute, string, string][] = [
+    ['home', '#/', n.notice],
+    ['check', '#/check', n.check],
+    ['report', '#/report', n.report],
+  ];
+  return (
+    <nav className="tool-nav" aria-label="LexCourt">
+      {tabs.map(([r, href, label]) => (
+        <a key={r} href={href} aria-current={route === r ? 'page' : undefined}>
+          {label}
+        </a>
+      ))}
+    </nav>
   );
 }
 

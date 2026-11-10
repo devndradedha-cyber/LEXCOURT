@@ -108,3 +108,37 @@ footer { max-width: 640px; margin: 0 auto; padding: 8px 16px 32px; padding-botto
 .legal-doc .back { display: inline-block; margin-bottom: 12px; font-weight: 600; min-height: 44px; }
 .legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; margin-bottom: 8px; }
 .legal-links a { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+
+/* Tool tabs */
+.tool-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 640px; margin: 0 auto; padding: 10px 16px 0; }
+.tool-nav a { text-align: center; padding: 6px 6px; min-height: 48px; display: flex; align-items: center; justify-content: center; line-height: 1.2;
+  border: 2px solid var(--border); border-radius: 12px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; background: var(--card); }
+.tool-nav a[aria-current='page'] { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+
+/* Choices, checklists */
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { padding: 0; margin-bottom: 8px; }
+legend h2 { margin-bottom: 4px; }
+.choices, .checklist { display: grid; gap: 10px; }
+.choice { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; font-weight: 400; }
+.choice:has(input:checked) { border-color: var(--brand); background: var(--info-bg); }
+.choice input { width: 24px; height: 24px; min-height: 0; flex-shrink: 0; margin: 1px 0 0; accent-color: var(--brand); }
+.choice.inline { padding: 8px 14px; align-items: center; }
+.seg { gap: 10px; margin: 8px 0 12px; }
+select { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; min-height: 48px; }
+
+/* Results */
+.alert { background: var(--warn-bg); border: 2px solid var(--warn-border); border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+.alert p { margin: 4px 0; }
+.steps { padding-left: 22px; }
+.steps > li { margin: 10px 0; }
+.rank { font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 18px 0 6px; }
+.authority { border: 1px solid var(--border); border-left: 5px solid var(--brand); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+.authority h4 { margin: 0 0 4px; font-size: 18px; }
+.authority ul { padding-left: 20px; }
+textarea.summary { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; line-height: 1.45; }
+.before-file { font-size: 16px; color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Headings that receive focus programmatically (step changes, results) */
+[tabindex='-1']:focus { outline: none; }

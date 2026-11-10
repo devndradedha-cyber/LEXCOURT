@@ -21,6 +21,20 @@ A free, mobile-first web app for people in U.S. immigration court who don't have
 
 The app is in **English and Spanish**. It picks the language from the browser, and the user can switch it at any time.
 
+## Check a representative and Report a problem (draft)
+
+> ⚠️ **DRAFT — needs attorney review.** These pages show a draft banner. Their text is in `src/lib/toolsText.ts` and the complaint routing rules are in `src/lib/report.ts`.
+
+- **Check a representative** (`#/check`): the person types a name (optional) and says what the representative claims to be. The page explains how to verify them, step by step, and links to the official sources:
+  - EOIR's roster of recognized organizations and accredited representatives
+  - EOIR's lists of currently and previously disciplined practitioners
+  - official state lawyer searches (CA, FL, IL, NJ, NY and TX; other states via the ABA directory of state lawyer regulators)
+
+  It also has a checklist of 12 notario-fraud warning signs. LexCourt never looks anyone up itself: the name stays on the device.
+- **Report a problem** (`#/report`): a five-step questionnaire (who, what happened, immigration court case, state, optional details). It shows which offices usually handle the problem: the state lawyer discipline office, EOIR Disciplinary Counsel (Form EOIR-44), the EOIR Fraud & Abuse Prevention Program, the state attorney general, or the FTC. It links to their official complaint forms and builds a summary, in English or Spanish, to copy and paste. **Nothing is ever submitted automatically.**
+- **Same privacy rules:** answers live only in the page's memory, nothing is stored or sent, and reloading clears everything. The tests check that the only thing in `localStorage` is the terms acceptance.
+- Links are in `src/lib/resources.ts` (`OFFICIAL`, `STATE_LAWYER_LOOKUPS`). They were checked against search-engine indexes on 2026-11-10, but the sites themselves couldn't be opened from the build environment.
+
 ## Disclaimer, Terms of Use and Privacy Policy (draft)
 
 > ⚠️ **DRAFT — needs attorney review.** The legal text in `src/lib/legal.ts` hasn't been reviewed by a lawyer. The app shows it as a draft on every legal page.
@@ -81,6 +95,8 @@ Every push then deploys automatically. Other branches get their own preview URLs
 
 - [ ] Open every link in `src/lib/resources.ts` in a browser. On 2026-11-10 they were checked against search-engine indexes of the official sites, but the sites themselves couldn't be opened from the build environment. Confirm the Spanish (`/es/`) versions especially.
 - [ ] **Have a licensed attorney review and approve the Disclaimer, Terms of Use and Privacy Policy in `src/lib/legal.ts`** and resolve every `[ATTORNEY REVIEW]` note: governing law, operating entity, contact address, warranty and liability wording, and state privacy notices. Then set `IS_DRAFT = false` and give `TERMS_VERSION` a new, non-draft value.
+- [ ] Have an attorney review the **Check a representative** and **Report a problem** text and the routing rules (Parts 9–10 of the review document). Then set `TOOLS_DRAFT = false` in `src/lib/toolsText.ts`.
+- [ ] Open every link in `OFFICIAL` and `STATE_LAWYER_LOOKUPS` in a browser. Consider adding official lawyer searches for more states.
 - [ ] Have a qualified legal translator review the Spanish legal text.
 - [ ] Have an immigration attorney or DOJ-accredited representative review all text in `src/lib/i18n.ts`.
 - [ ] Have a native Spanish speaker review the Spanish text, ideally with people who will use the app.
