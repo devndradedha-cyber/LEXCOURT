@@ -117,13 +117,13 @@ const en: Strings = {
   needDate: 'Enter the hearing date first.',
   reminderTitle: 'Immigration court hearing',
   reminderDescription: (a) =>
-    `Bring: this notice, photo ID, and any documents for your case.${a ? ' Have your A-Number ready.' : ''} Arrive early. Check your hearing date: ${'acis.eoir.justice.gov'} or 1-800-898-7180. (Reminder made with LexCourt — legal information, not legal advice.)`,
+    `Bring: this notice, photo ID, and any documents for your case.${a ? ' Have your A-Number ready.' : ''} Arrive early. Check your hearing date: acis.eoir.justice.gov or 1-800-898-7180. (Reminder made with LexCourt — legal information, not legal advice.)`,
   whatIsThis: 'What this document is',
   mustKnowTitle: 'Important things to know',
   mustKnow: [
     'Go to every hearing. If you miss a hearing, the judge can order you deported (“removed”) without you being there. This is called an order “in absentia.”',
     'Hearing dates can change. Check your case often online at the court’s Automated Case Information site or by phone at 1-800-898-7180. You will need your A-Number.',
-    'If you move, tell the immigration court in writing within 5 days, using Form EOIR-33/IC. If the court has an old address, you could miss a notice. Telling ICE or USCIS is separate and does not update the court.',
+    'If you move, tell the immigration court in writing within 5 days, using Form EOIR-33/IC. You can file it online. If the court has an old address, you could miss a notice. Telling ICE or USCIS is separate and does not update the court.',
     'You have the right to a lawyer, but the government does not pay for one. You can ask the judge for time to find a lawyer. Free and low-cost help is listed below.',
     'The court provides an interpreter at your hearing for free. Tell the court what language you speak best.',
     'Bring this notice, a photo ID, and any documents about your case. Arrive early: there is a security check.',
@@ -134,7 +134,7 @@ const en: Strings = {
   helpDirectory: 'Nonprofit immigration legal services directory',
   helpCourtGuide: 'Immigration Court Online Resource — official guides in plain language',
   helpCaseStatus: (phone) => `Check your hearing date and case status (online, or call ${phone})`,
-  helpForms: 'Court forms, including EOIR-33/IC change of address',
+  helpForms: 'Tell the court your new address online (Form EOIR-33/IC, no account needed)',
   notarioWarning:
     'Be careful of “notarios,” “immigration consultants,” or anyone who is not a lawyer or a DOJ-accredited representative. They are not allowed to give legal advice, and some take money and hurt people’s cases.',
   showText: 'Show the text we read',
@@ -245,7 +245,7 @@ const es: Strings = {
   mustKnow: [
     'Vaya a todas sus audiencias. Si falta a una audiencia, el juez puede ordenar su deportación (“remoción”) aunque usted no esté presente. Esto se llama una orden “in absentia”.',
     'Las fechas de audiencia pueden cambiar. Revise su caso seguido en el sitio de Información Automatizada de Casos de la corte o por teléfono al 1-800-898-7180. Necesitará su Número A.',
-    'Si se muda, avise a la corte de inmigración por escrito dentro de 5 días con el Formulario EOIR-33/IC. Si la corte tiene una dirección vieja, podría no recibir un aviso. Avisar a ICE o USCIS es aparte y no cambia su dirección en la corte.',
+    'Si se muda, avise a la corte de inmigración por escrito dentro de 5 días con el Formulario EOIR-33/IC. Puede hacerlo por internet. Si la corte tiene una dirección vieja, podría no recibir un aviso. Avisar a ICE o USCIS es aparte y no cambia su dirección en la corte.',
     'Usted tiene derecho a un abogado, pero el gobierno no lo paga. Puede pedirle al juez tiempo para buscar un abogado. Abajo hay ayuda gratuita o de bajo costo.',
     'La corte le da un intérprete gratis en su audiencia. Dígale a la corte qué idioma habla mejor.',
     'Lleve este aviso, una identificación con foto y los documentos de su caso. Llegue temprano: hay un control de seguridad.',
@@ -256,7 +256,7 @@ const es: Strings = {
   helpDirectory: 'Directorio de servicios legales de inmigración sin fines de lucro',
   helpCourtGuide: 'Recurso en línea de la corte de inmigración (ICOR) — guías oficiales en palabras sencillas',
   helpCaseStatus: (phone) => `Revise la fecha de su audiencia y el estado de su caso (por internet o llamando al ${phone})`,
-  helpForms: 'Formularios de la corte, incluido el EOIR-33/IC de cambio de dirección',
+  helpForms: 'Avise a la corte su nueva dirección por internet (Formulario EOIR-33/IC, no necesita cuenta)',
   notarioWarning:
     'Cuidado con los “notarios”, “consultores de inmigración” o cualquier persona que no sea abogado ni representante acreditado por el Departamento de Justicia. No pueden dar asesoría legal, y algunos cobran dinero y dañan los casos de las personas.',
   showText: 'Ver el texto que leímos',

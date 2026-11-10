@@ -349,12 +349,13 @@ function Result({
 
 function LegalHelp({ lang }: { lang: Lang }) {
   const t = STRINGS[lang];
+  const L = LINKS[lang];
   const links: [string, string][] = [
-    [t.helpProBono, LINKS.proBonoList],
-    [t.helpDirectory, LINKS.legalDirectory],
-    [t.helpCaseStatus(LINKS.caseStatusPhone), LINKS.caseStatus],
-    [t.helpCourtGuide, LINKS.courtGuide],
-    [t.helpForms, LINKS.eoirForms],
+    [t.helpProBono, L.proBonoList],
+    [t.helpDirectory, L.legalDirectory],
+    [t.helpCaseStatus(L.caseStatusPhone), L.caseStatus],
+    [t.helpCourtGuide, L.courtGuide],
+    [t.helpForms, L.changeOfAddress],
   ];
   return (
     <section className="card help" aria-labelledby="help-title">
@@ -369,7 +370,7 @@ function LegalHelp({ lang }: { lang: Lang }) {
           </li>
         ))}
         <li>
-          <a href={`tel:${LINKS.caseStatusPhone.replace(/-/g, '')}`}>📞 {LINKS.caseStatusPhone}</a>
+          <a href={`tel:+1${L.caseStatusPhone.replace(/-/g, '').slice(1)}`}>📞 {L.caseStatusPhone}</a>
         </li>
       </ul>
       <p className="warn">{t.notarioWarning}</p>

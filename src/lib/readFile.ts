@@ -4,9 +4,9 @@
  * - PDFs with real text are read directly with pdf.js.
  * - Scanned PDFs and photos are read with Tesseract OCR (English + Spanish).
  *
- * The file itself never leaves the browser. The OCR engine and its language
- * models are downloaded from a public CDN the first time they're needed;
- * no user data is sent with that download.
+ * The file itself never leaves the browser. The OCR engine and its English and
+ * Spanish models are served by LexCourt itself from /tesseract/ (copied there by
+ * scripts/copy-ocr-assets.mjs); nothing is loaded from a CDN.
  */
 
 export type Progress = (stage: 'pdf' | 'ocr-loading' | 'ocr', fraction: number) => void;
@@ -70,7 +70,14 @@ async function ocr(images: Blob[], onProgress: Progress): Promise<string> {
   onProgress('ocr-loading', 0);
   const { createWorker } = await import('tesseract.js');
   let pageIndex = 0;
+  const base = `${import.meta.env.BASE_URL}tesseract`;
   const worker = await createWorker(['eng', 'spa'], 1, {
+    workerPath: `${base}/worker.min.js`,
+    corePath: `${base}/core`,
+    langPath: `${base}/lang`,
+    gzip: true,
+    // Load the worker as a normal same-origin script, not a blob: URL.
+    workerBlobURL: false,
     logger: (m: { status: string; progress: number }) => {
       if (m.status === 'recognizing text') {
         onProgress('ocr', (pageIndex + m.progress) / images.length);
