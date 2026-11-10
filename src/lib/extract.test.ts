@@ -114,3 +114,87 @@ describe('findTimes', () => {
     expect(findTimes('12:15 AM')[0].value).toBe('00:15');
   });
 });
+
+describe('never confuses the person’s own address or the printed date with the hearing details', () => {
+  const THEIRS = /EXAMPLE|QUEENS|11375/i;
+
+  const cases: [string, string][] = [
+    [
+      '"To:" label lost by OCR, name line above the address',
+      `DOE, JANE
+123 EXAMPLE STREET
+QUEENS, NY 11375
+Date: Nov 2, 2026
+NOTICE OF HEARING IN REMOVAL PROCEEDINGS
+Your case has been scheduled for a MASTER hearing on Jan 15, 2027 at 08:30 AM at:
+26 FEDERAL PLAZA, ROOM 1237
+NEW YORK, NY 10278`,
+    ],
+    [
+      'printed date label on the line above the date',
+      `Date:
+11/02/2026
+To: DOE, JANE
+123 EXAMPLE STREET
+QUEENS, NY 11375
+NOTICE OF HEARING. Your hearing is scheduled on 01/15/2027 at 8:30 AM at 26 FEDERAL PLAZA, NEW YORK, NY 10278`,
+    ],
+    [
+      'Spanish labels (Para: / Fecha:)',
+      `Fecha: 2 de noviembre de 2026
+Para: DOE, JANE
+123 EXAMPLE STREET
+QUEENS, NY 11375
+AVISO DE AUDIENCIA. Su audiencia está programada para el 15 de enero de 2027 a las 8:30 de la mañana en 26 FEDERAL PLAZA, NEW YORK, NY 10278`,
+    ],
+    [
+      'certificate of service date after the hearing date',
+      `NOTICE OF HEARING
+Your case has been scheduled for a MASTER hearing on Jan 15, 2027 at 08:30 AM at 26 FEDERAL PLAZA, NEW YORK, NY 10278
+CERTIFICATE OF SERVICE
+This document was served by mail to: DOE, JANE
+123 EXAMPLE STREET
+QUEENS, NY 11375
+on Dec 20, 2026 by court staff`,
+    ],
+  ];
+
+  it.each(cases)('%s', (_name, text) => {
+    const f = extractNoticeFacts(text, TODAY);
+    expect(f.date).toBe('2027-01-15');
+    expect(f.time).toBe('08:30');
+    expect(f.courtAddress).toMatch(/26 FEDERAL PLAZA/);
+    expect(f.courtAddress).toMatch(/NEW YORK, NY 10278/);
+    expect(f.courtAddress).not.toMatch(THEIRS);
+  });
+
+  it('leaves the court address blank when only the person’s address is readable', () => {
+    const f = extractNoticeFacts(
+      `To: DOE, JANE
+123 EXAMPLE STREET
+QUEENS, NY 11375
+NOTICE OF HEARING. Your hearing is scheduled on Jan 15, 2027 at 8:30 AM at [unreadable]`,
+      TODAY,
+    );
+    expect(f.courtAddress).toBeNull();
+    expect(f.date).toBe('2027-01-15');
+  });
+
+  it('leaves the hearing date blank when only the printed date is readable', () => {
+    const f = extractNoticeFacts(
+      `Date: Nov 2, 2026
+NOTICE OF HEARING. Your hearing is scheduled on J#n 1S, 2O27 at 26 FEDERAL PLAZA, NEW YORK, NY 10278`,
+      TODAY,
+    );
+    expect(f.date).toBeNull();
+    expect(f.time).toBeNull();
+  });
+
+  it('does not treat "individual authorized to practice" boilerplate as an individual hearing', () => {
+    const f = extractNoticeFacts(
+      'MASTER hearing on Jan 15, 2027. You may be represented by an attorney or other individual authorized to practice.',
+      TODAY,
+    );
+    expect(f.hearingType).toBe('master');
+  });
+});

@@ -35,7 +35,7 @@ The app is in **English and Spanish**. It picks the language from the browser, a
 ```bash
 npm install
 npm run dev        # local dev server
-npm test           # unit tests (parser + calendar file)
+npm test           # unit tests + real OCR on sample notice photos (src/lib/__fixtures__)
 npm run build      # type-check + production build into dist/
 ```
 
@@ -62,6 +62,8 @@ Every push then deploys automatically. Other branches get their own preview URLs
 | `src/lib/i18n.ts` | All user-facing text, in English and Spanish |
 | `src/lib/resources.ts` | All outside links (legal aid, EOIR) in one place, per language |
 | `scripts/copy-ocr-assets.mjs` | Copies the OCR engine and models into `public/tesseract/` |
+| `src/lib/ocr.test.ts` | Runs the real OCR on fictional notice photos and checks the person's own address and the printed date are never used as the court address or hearing date |
+| `scripts/make-ocr-fixtures.cjs` | Regenerates those photos (needs Playwright) |
 | `src/App.tsx` | The UI |
 
 ## Before launch

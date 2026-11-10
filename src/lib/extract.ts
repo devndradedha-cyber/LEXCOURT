@@ -196,9 +196,25 @@ export function findTimes(text: string): Found<string>[] {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Choosing the hearing date
+//
+// A notice usually has several dates: the hearing date, the date the notice was
+// printed ("Date: ..."), and sometimes a certificate-of-service date. We only
+// return a date when the text gives positive evidence that it's the hearing
+// date. Dates labeled as the printed / mailed / service date are never used.
+// If nothing qualifies we return null and the person types the date in, which
+// is much safer than showing the wrong day.
+// ---------------------------------------------------------------------------
+
 const HEARING_KEYWORDS =
   /(scheduled|hearing|appear|audiencia|comparecer|programad[ao]|court date|cita|corte)/gi;
-const ISSUE_DATE_KEYWORDS = /(date\s*:|fecha\s*:|dated|served|mailed|enviad[ao]|certificate of service)/gi;
+
+/** Labels that mark a date as the notice's own date, not the hearing date. */
+const ISSUE_DATE_LABEL =
+  /\b(date|dated|issued|mailed|served|date of service|fecha|fecha de (?:env[ií]o|emisi[oó]n|notificaci[oó]n)|enviad[ao]|emitid[ao])\s*[:;.]?\s*$/i;
+
+const SERVICE_SECTION = /certificate\s+of\s+service|certificado\s+de\s+(?:notificaci[oó]n|servicio|entrega)/i;
 
 function keywordPositions(text: string, re: RegExp): number[] {
   const pos: number[] = [];
@@ -208,18 +224,37 @@ function keywordPositions(text: string, re: RegExp): number[] {
   return pos;
 }
 
+function lineStart(text: string, index: number): number {
+  return text.lastIndexOf('\n', index - 1) + 1;
+}
+
+/** True when a date is labeled as the notice's printed/mailed/service date. */
+export function isIssueDate(text: string, d: { index: number }): boolean {
+  const start = lineStart(text, d.index);
+  const before = text.slice(start, d.index);
+  if (ISSUE_DATE_LABEL.test(before)) return true;
+  // Label alone on the line above: "Date:\n11/02/2026"
+  if (!before.trim()) {
+    const prevStart = lineStart(text, start - 1);
+    const prev = text.slice(prevStart, Math.max(prevStart, start - 1));
+    if (/^\s*(date|dated|fecha)\s*[:;.]?\s*$/i.test(prev)) return true;
+  }
+  const service = text.search(SERVICE_SECTION);
+  return service !== -1 && d.index > service;
+}
+
 function pickHearingDate(text: string, dates: Found<string>[], times: Found<string>[]): Found<string> | null {
-  if (dates.length === 0) return null;
   const hearingKw = keywordPositions(text, HEARING_KEYWORDS);
-  const issueKw = keywordPositions(text, ISSUE_DATE_KEYWORDS);
   let best: Found<string> | null = null;
-  let bestScore = -Infinity;
+  let bestScore = 0;
   for (const d of dates) {
+    if (isIssueDate(text, d)) continue;
     let score = 0;
     if (hearingKw.some((p) => d.index >= p && d.index - p <= 120)) score += 3;
-    if (issueKw.some((p) => d.index >= p && d.index - p <= 25)) score -= 4;
-    if (times.some((t) => Math.abs(t.index - d.end) <= 40)) score += 2;
-    if (score > bestScore || (score === bestScore && best && d.value > best.value)) {
+    if (times.some((t) => t.index >= d.end && t.index - d.end <= 40)) score += 2;
+    if (/\b(on|el|for|para|para el)\s*:?\s*$/i.test(text.slice(Math.max(0, d.index - 12), d.index))) score += 2;
+    // Require positive evidence. Ties go to the later date.
+    if (score > bestScore || (score === bestScore && score > 0 && best && d.value > best.value)) {
       best = d;
       bestScore = score;
     }
@@ -229,8 +264,8 @@ function pickHearingDate(text: string, dates: Found<string>[], times: Found<stri
 
 function pickTime(times: Found<string>[], date: Found<string> | null): string | null {
   if (times.length === 0) return null;
-  if (!date) return times[0].value;
-  let best = times[0];
+  if (!date) return times.length === 1 ? times[0].value : null;
+  let best: Found<string> | null = null;
   let bestDist = Infinity;
   for (const t of times) {
     const dist = t.index >= date.end ? t.index - date.end : (date.index - t.end) * 2;
@@ -239,48 +274,148 @@ function pickTime(times: Found<string>[], date: Found<string> | null): string | 
       bestDist = dist;
     }
   }
-  return bestDist <= 200 ? best.value : times[0].value;
+  return best && bestDist <= 200 ? best.value : null;
 }
 
-const CITY_STATE_ZIP = /^(.*?[A-Za-z][A-Za-z .'-]+),?\s+([A-Z]{2})\.?,?\s+(\d{5})(?:-\d{4})?\s*$/;
+// ---------------------------------------------------------------------------
+// Choosing the court address
+//
+// A notice usually shows two addresses: the court's, and the person's own
+// mailing address (under "To:" and their name). The person's address must
+// never be shown as the court address. We find every "City, ST 12345", rebuild
+// the address around it, throw out any that look like the person's own, and
+// keep the court address only when there is positive evidence (it follows "at:"
+// / "Location:" after the hearing date, or sits under "Immigration Court").
+// ---------------------------------------------------------------------------
+
+/** "City, ST 12345" — the state and ZIP may wrap onto the next line in OCR text. */
+const CITY_STATE_ZIP = /([A-Za-z][A-Za-z.' ]{1,30}?),?[ \t]*\n?[ \t]*([A-Z]{2})\.?,?\s+(\d{5})(?:-\d{4})?(?!\d)/g;
+const ADDRESS_WORDS =
+  /\d|floor|fl\.|suite|ste\.?|room|rm\.?|plaza|street|st\.|ave|avenue|blvd|boulevard|road|rd\.|drive|dr\.|way|lane|ln\.|piso|sala|calle|oficina|p\.?o\.? box/i;
+const PLACE_LABEL = /(?:\bat|\ben|\blocation|\bubicaci[oó]n|\blugar|\bdirecci[oó]n|\baddress)\s*[:;]?(?:\s+|$)/gi;
+
+/** Text after a place label that starts like a street address (a number that isn't a clock time). */
+function startsLikeStreet(s: string): boolean {
+  return /^\s*\d/.test(s) && !/^\s*\d{1,2}:\d{2}/.test(s);
+}
+
+/** The text after the last place label on a line, if it starts like a street address. */
+function afterPlaceLabel(line: string): string | null {
+  const labels = [...line.matchAll(new RegExp(PLACE_LABEL.source, 'gi'))];
+  for (let i = labels.length - 1; i >= 0; i--) {
+    const rest = line.slice(labels[i].index! + labels[i][0].length);
+    if (startsLikeStreet(rest)) return rest;
+  }
+  return null;
+}
+/** Text from another column that OCR glued onto the end of an address line. */
+const OTHER_COLUMN = /\s+(?:date|dated|fecha|riders?|a-?\s?number|n[uú]mero\s+a|file)\b.*$/i;
+const RESPONDENT_LABEL = /^\s*(?:to|para|respondent|demandado|encuestado)\b\s*(?:name)?\s*[:;.]?/i;
+/** A name line as notices print it: "DOE, JANE" / "GARCIA LOPEZ, MARIA E". */
+const NAME_LINE = /^[A-ZÁÉÍÓÚÑ'.-]+(?:\s[A-ZÁÉÍÓÚÑ'.-]+)*,\s*[A-ZÁÉÍÓÚÑ'.-]+(?:\s[A-ZÁÉÍÓÚÑ'.-]+)*$/;
+
+interface AddressCandidate {
+  text: string;
+  start: number;
+  end: number;
+  respondent: boolean;
+  score: number;
+}
+
+function findAddressCandidates(text: string, hearingDate: Found<string> | null): AddressCandidate[] {
+  const out: AddressCandidate[] = [];
+  const re = new RegExp(CITY_STATE_ZIP.source, 'g');
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    const cityStart = m.index + (m[0].length - m[0].trimStart().length);
+    const end = m.index + m[0].length;
+    let start = lineStart(text, cityStart);
+    let labeled = false;
+
+    // Text before the city on the same line ("... at 26 FEDERAL PLAZA, ").
+    const prefix = text.slice(start, cityStart);
+    const afterLabel = afterPlaceLabel(prefix);
+    if (afterLabel !== null) {
+      start = cityStart - afterLabel.length;
+      labeled = true;
+    } else if (prefix.trim() && !ADDRESS_WORDS.test(prefix)) {
+      start = cityStart; // unrelated words before the city
+    }
+
+    // Walk back over up to 3 earlier lines that look like street / floor / room.
+    const lines: string[] = [];
+    let cursor = lineStart(text, start);
+    let skippedBlank = false;
+    while (!labeled && lines.length < 3 && cursor > 0) {
+      const prevStart = lineStart(text, cursor - 1);
+      const raw = text.slice(prevStart, cursor - 1);
+      const line = raw.replace(OTHER_COLUMN, '').trim();
+      if (!line) {
+        if (skippedBlank) break;
+        skippedBlank = true;
+        cursor = prevStart;
+        continue;
+      }
+      const rest = afterPlaceLabel(line);
+      if (rest !== null) {
+        lines.unshift(rest.trim());
+        labeled = true;
+        cursor = prevStart;
+        break;
+      }
+      // A line ending in "at:" / "Location:" means the address starts on the next line.
+      if (/(?:\bat|\ben|location|ubicaci[oó]n|lugar|direcci[oó]n|address)\s*[:;]?\s*$/i.test(line)) break;
+      if (!ADDRESS_WORDS.test(line) || line.length > 90 || RESPONDENT_LABEL.test(line) || NAME_LINE.test(line)) break;
+      lines.unshift(line);
+      cursor = prevStart;
+    }
+    const blockStart = lines.length ? cursor : start;
+
+    const sameLine = text.slice(start, end).replace(/\s*\n\s*/g, ' ').replace(OTHER_COLUMN, '').trim();
+    const parts = [...lines, sameLine].map((l) => l.replace(/[,;]\s*$/, '').trim()).filter(Boolean);
+    // "26 FEDERAL PLAZA, ROOM 1237, NEW YORK, NY 10278" → put the city line on its own line.
+    const joined = parts.join('\n').replace(/,\s*([A-Za-z][A-Za-z.' ]{1,30},?\s+[A-Z]{2}\.?,?\s+\d{5}(?:-\d{4})?)$/, '\n$1');
+
+    // Context: the lines just above the address, and the start of its own line.
+    const above = text.slice(Math.max(0, lineStart(text, Math.max(0, blockStart - 1)) - 200), blockStart);
+    const aboveLines = above.split('\n').map((l) => l.trim()).filter(Boolean).slice(-3);
+    const ownLine = text.slice(lineStart(text, blockStart), blockStart);
+    const firstLine = joined.split('\n')[0];
+    const respondent =
+      !labeled &&
+      (RESPONDENT_LABEL.test(ownLine) ||
+        RESPONDENT_LABEL.test(firstLine) ||
+        aboveLines.slice(-2).some((l) => NAME_LINE.test(l.replace(OTHER_COLUMN, '').replace(RESPONDENT_LABEL, '').trim())) ||
+        aboveLines.some((l) => RESPONDENT_LABEL.test(l)));
+
+    let score = 0;
+    const labelBefore = /(?:\bat|\ben|location|ubicaci[oó]n|lugar|direcci[oó]n|address)\s*[:;]?\s*$/i;
+    if (labeled || (aboveLines.length && labelBefore.test(aboveLines[aboveLines.length - 1]))) score += 5;
+    if (hearingDate && blockStart >= hearingDate.index && blockStart - hearingDate.end < 400) score += 3;
+    if (aboveLines.slice(-2).some((l) => /immigration court|corte de inmigraci[oó]n|tribunal de inmigraci[oó]n/i.test(l))) score += 2;
+
+    out.push({ text: joined, start: blockStart, end, respondent, score });
+  }
+  return out;
+}
+
+function normalizeAddress(a: string): string {
+  return a.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
 
 function pickCourtAddress(text: string, hearingDate: Found<string> | null): string | null {
-  const lines = text.split(/\r?\n/);
-  const offsets: number[] = [];
-  let acc = 0;
-  for (const l of lines) {
-    offsets.push(acc);
-    acc += l.length + 1;
-  }
-  const candidates: { lines: string[]; index: number; score: number }[] = [];
-  lines.forEach((line, i) => {
-    const trimmed = line.trim();
-    if (!CITY_STATE_ZIP.test(trimmed)) return;
-    // Walk back up to two lines for street / floor / room.
-    const block = [trimmed];
-    for (let j = i - 1; j >= Math.max(0, i - 2); j--) {
-      const prev = lines[j].trim();
-      if (!prev) break;
-      if (/\d|floor|suite|room|ste\.?|plaza|street|st\.|ave|avenue|blvd|road|rd\.|drive|piso|sala|calle/i.test(prev) && prev.length < 80) {
-        // Strip a leading "at:" / "en:" label.
-        block.unshift(prev.replace(/^.*?\b(at|en)\s*:\s*/i, ''));
-      } else break;
-    }
-    const index = offsets[i - (block.length - 1)];
-    const before = text.slice(Math.max(0, index - 250), index);
-    let score = 0;
-    if (/immigration court|corte de inmigraci[oó]n|tribunal de inmigraci[oó]n|\bat\s*:|\ben\s*:/i.test(before)) score += 3;
-    if (hearingDate && index > hearingDate.index && index - hearingDate.end < 400) score += 3;
-    if (/\b(to|para|a)\s*:\s*[^\n]*\n?[^\n]*$/i.test(text.slice(Math.max(0, index - 120), index))) score -= 4;
-    candidates.push({ lines: block, index, score });
-  });
-  if (candidates.length === 0) {
-    // Fall back to an "at: ..." phrase on one line (common in spoken/typed descriptions).
-    const m = text.match(/\b(?:at|en)\s*:?\s+(\d+[^\n.]{5,80})/i);
-    return m ? m[1].trim() : null;
-  }
-  candidates.sort((a, b) => b.score - a.score || a.index - b.index);
-  return candidates[0].lines.join('\n');
+  const candidates = findAddressCandidates(text, hearingDate);
+  const respondentZips = new Set(
+    candidates.filter((c) => c.respondent).map((c) => normalizeAddress(c.text)),
+  );
+  const court = candidates
+    .filter((c) => !c.respondent && c.score > 0 && !respondentZips.has(normalizeAddress(c.text)))
+    .sort((a, b) => b.score - a.score || b.text.length - a.text.length || a.start - b.start);
+  if (court.length) return court[0].text;
+  if (candidates.length) return null; // only the person's own address (or no evidence): leave it blank
+  // Spoken/typed descriptions: "the court is at 26 Federal Plaza in New York".
+  const m = text.match(/\b(?:at|en)\s*:?\s+(\d+[^\n.]{5,80})/i);
+  return m ? m[1].trim() : null;
 }
 
 export function detectNoticeType(text: string): NoticeType {
@@ -294,7 +429,10 @@ export function detectNoticeType(text: string): NoticeType {
 }
 
 export function detectHearingType(text: string): HearingType {
-  if (/\bindividual\b|\bmerits\b|\bm[eé]rito/i.test(text)) return 'individual';
+  // Match the hearing's own label, not boilerplate such as
+  // "an attorney or other individual authorized to practice".
+  if (/\bindividual\s+(?:calendar\s+|merits\s+)?hearing|\bmerits\s+hearing|audiencia\s+individual|audiencia\s+de\s+m[eé]ritos|hearing\s+type\s*:\s*individual/i.test(text))
+    return 'individual';
   if (/\bmaster\b|calendario\s+principal|audiencia\s+preliminar|primera\s+audiencia|first\s+hearing/i.test(text)) return 'master';
   return 'unknown';
 }
@@ -305,11 +443,18 @@ export function findANumber(text: string): string | null {
   );
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   const bare = text.match(/\bA[-\s]?(\d{3})[-\s](\d{3})[-\s](\d{3})\b/);
-  return bare ? `${bare[1]}-${bare[2]}-${bare[3]}` : null;
+  if (bare) return `${bare[1]}-${bare[2]}-${bare[3]}`;
+  // Two-column layouts put the label and the number on different lines.
+  // 3-3-3 digits is the A-Number shape (phone numbers are 3-3-4).
+  if (/A-?\s?Number|N[uú]mero\s+A|Alien\s+(?:Registration\s+)?N/i.test(text)) {
+    const loose = text.match(/(?<![\d-])(\d{3})-(\d{3})-(\d{3})(?![\d-])/);
+    if (loose) return `${loose[1]}-${loose[2]}-${loose[3]}`;
+  }
+  return null;
 }
 
 export function extractNoticeFacts(text: string, today = new Date()): NoticeFacts {
-  const clean = text.replace(/ /g, ' ').replace(/[ \t]+/g, ' ');
+  const clean = text.replace(/ /g, ' ').replace(/[ \t]+/g, ' ').replace(/\r\n?/g, '\n');
   const dates = findDates(clean, today);
   const times = findTimes(clean).filter(
     // Ignore "times" that are really part of a date we already matched.
