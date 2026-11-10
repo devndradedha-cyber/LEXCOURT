@@ -354,7 +354,73 @@ const partReport: Part = {
   ]).map((r) => (r.kind === 'text' ? { ...r, id: r.id.replace('R2-', 'Q-') } : r)),
 };
 
-const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport];
+const readMeta = (file: string) => readFileSync(join(root, file), 'utf8').match(/<meta name="description" content="([^"]+)"/)?.[1] ?? '';
+const readManifest = (file: string) => JSON.parse(readFileSync(join(root, 'public', file), 'utf8')).description as string;
+const partOther: Part = {
+  title: 'Other text (search engines and home-screen icon)',
+  intro:
+    'Shown in search results and link previews, and when the app is added to a phone’s home screen. A web page has one description and one home-screen manifest, so the Spanish versions are served from a separate Spanish address, /es/ (which also opens the app in Spanish). The English address is /.',
+  rows: [
+    { kind: 'text', id: 'X-1', where: 'Search results and link previews (English page / , Spanish page /es/)', key: 'index.html meta description (+ es/)', en: readMeta('index.html'), es: readMeta('es/index.html') },
+    { kind: 'text', id: 'X-2', where: 'Home-screen app description (English page / , Spanish page /es/)', key: 'manifest.webmanifest description (+ es/)', en: readManifest('manifest.webmanifest'), es: readManifest('es/manifest.webmanifest') },
+  ],
+};
+
+const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partOther];
+
+// ---------------------------------------------------------------------------
+// Revision tracking: what changed in this draft, marked on each row
+// ---------------------------------------------------------------------------
+
+const REVISION = 'draft 2';
+interface Change {
+  n: number;
+  what: string;
+  kind: 'NEW' | 'CHANGED';
+  keys: string[];
+}
+const CHANGES: Change[] = [
+  { n: 1, kind: 'CHANGED', what: 'Privacy Policy: LexCourt never receives the notice or its details; hosting records described below.', keys: ['legal.privacy.sections[1].paragraphs[1]'] },
+  { n: 2, kind: 'NEW', what: 'Users under 18: new Terms section and the same sentence on the acceptance screen. (Terms sections 6–12 renumbered.)', keys: ['legal.terms.sections[5].heading', 'legal.terms.sections[5].paragraphs[0]', 'legal.acceptIntro[4]'] },
+  { n: 3, kind: 'CHANGED', what: 'Judge’s order: example of the 30-day appeal deadline to the Board of Immigration Appeals.', keys: ['i18n.notice.judge_order.body[2]'] },
+  { n: 4, kind: 'NEW', what: 'Important things to know: ICE check-ins are different from court hearings.', keys: ['i18n.mustKnow[1]'] },
+  { n: 5, kind: 'CHANGED', what: 'Interpreter: provided at no cost if the person does not speak English well.', keys: ['i18n.mustKnow[5]'] },
+  { n: 6, kind: 'CHANGED', what: 'Spanish only: “seguido” → “con frecuencia”.', keys: ['i18n.mustKnow[2]'] },
+  { n: 7, kind: 'CHANGED', what: 'Spanish only: master calendar hearing title → “Audiencia de calendario principal”.', keys: ['i18n.hearing.master.title'] },
+  { n: 8, kind: 'CHANGED', what: 'EOIR-33/IC link label: removed “no account needed” (could not be confirmed).', keys: ['i18n.helpForms'] },
+  { n: 9, kind: 'NEW', what: 'Terms: Severability and Entire agreement sections.', keys: ['legal.terms.sections[12].heading', 'legal.terms.sections[12].paragraphs[0]', 'legal.terms.sections[13].heading', 'legal.terms.sections[13].paragraphs[0]'] },
+  { n: 10, kind: 'CHANGED', what: 'No warranty and Limitation of liability: reviewer note on Pennsylvania law (wording unchanged).', keys: ['legal.terms.sections[9].paragraphs[0]', 'legal.terms.sections[10].paragraphs[0]'] },
+  { n: 11, kind: 'CHANGED', what: 'Terms: governed by Pennsylvania law; operator name and contact email placeholders.', keys: ['legal.terms.sections[14].paragraphs[0]'] },
+  { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[6].paragraphs[0]'] },
+  { n: 13, kind: 'NEW', what: 'Spanish search description and home-screen description (served at /es/).', keys: ['index.html meta description (+ es/)', 'manifest.webmanifest description (+ es/)'] },
+];
+/** Reviewer notes added in this draft. `decision` ones are also listed under “Decisions needed”. */
+const NOTES: Record<string, { note: string; decision?: boolean }> = {
+  'i18n.hearing.master.title': { note: 'Translator to confirm the standard term.', decision: true },
+  'legal.terms.sections[9].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
+  'legal.terms.sections[10].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
+  'legal.terms.sections[14].paragraphs[0]': { note: 'No venue / forum clause yet: add one if wanted.', decision: true },
+  'i18n.helpForms': { note: 'Whether the online form needs an account could not be confirmed (site not reachable from the build environment), so the claim was removed.' },
+};
+const RENUMBERED = [6, 7, 8, 9, 10, 11].map((i) => `legal.terms.sections[${i}].heading`);
+
+const changeOf = new Map<string, Change>();
+for (const c of CHANGES) for (const k of c.keys) changeOf.set(k, c);
+const idOfKey = new Map<string, string>();
+for (const part of PARTS)
+  for (const r of part.rows) {
+    if (r.kind !== 'text') continue;
+    idOfKey.set(r.key, r.id);
+    const notes: string[] = [];
+    const c = changeOf.get(r.key);
+    if (c) notes.push(`${c.kind} in ${REVISION} (item ${c.n}) — draft, needs attorney review.`);
+    else if (RENUMBERED.includes(r.key)) notes.push(`Renumbered in ${REVISION} (new section 6 added before it).`);
+    if (NOTES[r.key]) notes.push(NOTES[r.key].note);
+    if (r.note) notes.push(r.note);
+    if (notes.length) r.note = notes.join(' ');
+  }
+for (const c of CHANGES) for (const k of c.keys) if (!idOfKey.has(k)) throw new Error(`change ${c.n}: no row with key ${k}`);
+for (const k of Object.keys(NOTES)) if (!idOfKey.has(k)) throw new Error(`note: no row with key ${k}`);
 
 // Routing table: which offices are shown for each kind of answer.
 const WHO_LABEL: Record<Who, string> = { lawyer: 'Lawyer', accredited: 'Accredited representative', nonlawyer: 'Notario / non-lawyer', unsure: 'Not sure' };
@@ -418,6 +484,16 @@ const TEXT_W = PAGE_W - 2 * MARGIN;
 const COLS = [760, 2000, 4280, 4280, 2360];
 if (COLS.reduce((a, b) => a + b) !== TEXT_W) throw new Error('column widths must add up to the text width');
 
+function noteRuns(note?: string): TextRun[] {
+  if (!note) return [];
+  const m = note.match(/^((?:NEW|CHANGED) in [^—]+—[^.]+\.)\s*(.*)$/);
+  if (!m) return [new TextRun({ text: note, font: FONT, size: 16, italics: true, color: MUTED })];
+  return [
+    new TextRun({ text: m[1], font: FONT, size: 16, bold: true, color: 'B42318' }),
+    ...(m[2] ? [new TextRun({ text: ` ${m[2]}`, font: FONT, size: 16, italics: true, color: MUTED })] : []),
+  ];
+}
+
 function cell(children: Paragraph[], width: number, fill?: string, span?: number): TableCell {
   return new TableCell({
     children,
@@ -474,7 +550,7 @@ function textTable(rows: Row[]): Table {
           ),
           cell([p(textRuns(r.en, { bold: r.bold }))], COLS[2], r.bold ? SECTION_FILL : undefined),
           cell([p(textRuns(r.es, { bold: r.bold }))], COLS[3], r.bold ? SECTION_FILL : undefined),
-          cell([p(r.note ? [new TextRun({ text: r.note, font: FONT, size: 16, italics: true, color: MUTED })] : [])], COLS[4]),
+          cell([p(noteRuns(r.note))], COLS[4]),
         ],
       }),
     );
@@ -532,8 +608,13 @@ const h2 = (text: string) => new Paragraph({ text, heading: HeadingLevel.HEADING
 // Decisions needed: every [ATTORNEY REVIEW] placeholder, with its row ID.
 const decisions: { id: string; text: string }[] = [];
 for (const part of PARTS)
-  for (const r of part.rows)
-    if (r.kind === 'text') for (const m of r.en.matchAll(/\[ATTORNEY REVIEW:\s*([^\]]+)\]/g)) decisions.push({ id: r.id, text: m[1].trim() });
+  for (const r of part.rows) {
+    if (r.kind !== 'text') continue;
+    for (const m of r.en.matchAll(/\[ATTORNEY REVIEW:\s*([^\]]+)\]/g)) decisions.push({ id: r.id, text: m[1].trim() });
+    const fills = [...r.en.matchAll(/\[([A-Z][A-Z ]+)\]/g)].map((m) => `[${m[1]}]`);
+    if (fills.length) decisions.push({ id: r.id, text: `fill in ${fills.join(' and ')}.` });
+    if (NOTES[r.key]?.decision) decisions.push({ id: r.id, text: NOTES[r.key].note });
+  }
 
 let commit = 'unknown';
 try {
@@ -541,9 +622,6 @@ try {
 } catch {
   /* not a git checkout */
 }
-const indexHtml = readFileSync(join(root, 'index.html'), 'utf8');
-const metaDescription = indexHtml.match(/<meta name="description" content="([^"]+)"/)?.[1] ?? '';
-const manifest = JSON.parse(readFileSync(join(root, 'public', 'manifest.webmanifest'), 'utf8'));
 const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 const textRowCount = PARTS.reduce((n, part) => n + part.rows.filter((r) => r.kind === 'text').length, 0);
 
@@ -582,6 +660,15 @@ const intro: (Paragraph | Table)[] = [
     'Everything runs on the user’s own phone or computer. The notice is never uploaded, and the app has no accounts, analytics or cookies. The only thing it stores is a note on the device that the user accepted the terms. The details the app extracts are automatic guesses; users can correct them, and the app tells them to check every detail against the notice and the court.',
   ),
 
+  h2(`What changed in this revision (${REVISION})`),
+  body(`Every new or changed row is marked “NEW in ${REVISION}” or “CHANGED in ${REVISION}” in its Reviewer notes column. All of it is a draft that needs attorney review. Adding a Terms section renumbered some rows, so row IDs differ from the previous version of this document; use the IDs below.`, 160),
+  simpleTable(
+    ['#', 'Change', 'Rows (new IDs)'],
+    CHANGES.map((c) => [String(c.n), `${c.kind}: ${c.what}`, c.keys.map((k) => idOfKey.get(k)).join(', ')]),
+    [600, 10080, 3000],
+  ),
+  new Paragraph({ spacing: { after: 120 }, children: [] }),
+
   h2('What we are asking you to review'),
   bullet(`Disclaimer, Terms of Use and Privacy Policy (Parts 1–4): adequacy and enforceability, including the first-use checkbox acceptance (${CHECKBOX_ID}) and the no-warranty and liability clauses.`),
   bullet('Information vs. advice (Part 5 especially): whether any explanation crosses from general legal information into legal advice, or could be read that way.'),
@@ -592,8 +679,10 @@ const intro: (Paragraph | Table)[] = [
   bullet('The decisions listed below, which the draft leaves open.'),
 
   h2('Decisions needed'),
-  body('These placeholders appear in the draft, highlighted in yellow in the tables:'),
-  ...decisions.map((d) => bullet(`${d.id}: ${d.text}`)),
+  body('Open items in the draft: placeholders (highlighted in yellow in the tables) and questions in the Reviewer notes column.'),
+  ...[...new Set(decisions.map((d) => d.id))].map((id) =>
+    bullet(`${id}: ${decisions.filter((d) => d.id === id).map((d) => d.text.replace(/^./, (c) => c.toUpperCase())).join(' ')}`),
+  ),
 
   h2('How to mark changes'),
   bullet('Edit the English or Spanish text directly with Track Changes on, or add Word comments. You can also write in the Reviewer notes column.'),
@@ -603,7 +692,6 @@ const intro: (Paragraph | Table)[] = [
 
   h2('Contents'),
   ...PARTS.map((part, i) => bullet(`Part ${i + 1}. ${part.title}`)),
-  bullet(`Part ${PARTS.length + 1}. Other text (search engines and home-screen icon)`),
 ];
 
 const partsContent: (Paragraph | Table)[] = [];
@@ -654,12 +742,6 @@ PARTS.forEach((part, i) => {
   }
 });
 partsContent.push(
-  h1(`Part ${PARTS.length + 1}. Other text (search engines and home-screen icon)`),
-  body('This text is English only. It appears in search results and when the app is added to a phone’s home screen.', 200),
-  textTable([
-    { kind: 'text', id: 'X-1', where: 'Search engines and link previews (page description)', key: 'index.html meta description', en: metaDescription, es: '(not translated)' },
-    { kind: 'text', id: 'X-2', where: 'Home-screen app description', key: 'manifest.webmanifest description', en: manifest.description, es: '(not translated)' },
-  ]),
   new Paragraph({ children: [], spacing: { after: 160 } }),
   body('Dates and times on the results screen (for example “Wednesday, March 3, 2027 · 8:30 AM”) are formatted by the user’s browser in the selected language.'),
 );

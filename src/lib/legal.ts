@@ -12,7 +12,7 @@
  */
 import type { Lang } from './i18n';
 
-export const TERMS_VERSION = '2026-11-10-draft';
+export const TERMS_VERSION = '2026-11-10-draft-2';
 export const IS_DRAFT = true;
 
 export interface Section {
@@ -57,6 +57,7 @@ const en: LegalText = {
     'LexCourt is not a law firm and is not a lawyer. It gives general legal information, not legal advice about your case. Using LexCourt does not create an attorney-client relationship.',
     'LexCourt can make mistakes, especially when reading photos. You must check every detail against your official notice and the court’s case information (online at acis.eoir.justice.gov or by phone at 1-800-898-7180).',
     'For advice about your case, talk to an attorney or a DOJ-accredited representative. Free legal help is listed in the app.',
+    'If you are under 18, please use LexCourt with a parent, guardian, trusted adult, or a legal service provider.',
   ],
   acceptCheckbox:
     'I have read and agree to the Terms of Use and the Privacy Policy. I understand that LexCourt is not a law firm, does not give legal advice, can make mistakes, and that I must check every detail myself.',
@@ -104,7 +105,7 @@ const en: LegalText = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: 'Draft of November 10, 2026',
+    updated: 'Draft 2 of November 10, 2026',
     sections: [
       {
         heading: '1. Agreement',
@@ -139,52 +140,64 @@ const en: LegalText = {
         ],
       },
       {
-        heading: '6. Reminders',
+        heading: '6. Users under 18',
+        paragraphs: ['If you are under 18, please use LexCourt with a parent, guardian, trusted adult, or a legal service provider.'],
+      },
+      {
+        heading: '7. Reminders',
         paragraphs: [
           'Calendar reminders are a convenience only. They depend on your device and calendar app, and may not work. They do not replace checking your notice and the court’s case information.',
         ],
       },
       {
-        heading: '7. Other websites and services',
+        heading: '8. Other websites and services',
         paragraphs: [
           'The Service links to websites run by others, including government agencies and nonprofit organizations. If you choose to use voice input, your browser’s speech service may process your voice. If you choose “Add to Google Calendar,” Google receives the event details. These services have their own terms and privacy policies, and LexCourt is not responsible for them.',
         ],
       },
       {
-        heading: '8. Acceptable use',
+        heading: '9. Acceptable use',
         paragraphs: [
           'Use the Service only for lawful purposes. Do not try to disrupt, overload or break the Service, or use it to mislead other people about their legal situation.',
         ],
       },
       {
-        heading: '9. No warranty',
+        heading: '10. No warranty',
         paragraphs: [
           'The Service is provided “as is” and “as available,” without warranties of any kind, express or implied, including warranties of accuracy, completeness, fitness for a particular purpose and non-infringement, to the fullest extent allowed by law. [ATTORNEY REVIEW: confirm wording and enforceability.]',
         ],
       },
       {
-        heading: '10. Limitation of liability',
+        heading: '11. Limitation of liability',
         paragraphs: [
           'To the fullest extent allowed by law, LexCourt and the people involved with it are not liable for any loss or harm arising from your use of, or reliance on, the Service, including missed hearings, missed deadlines or decisions in your case. [ATTORNEY REVIEW: confirm scope, consumer-protection limits and state-law requirements.]',
         ],
       },
       {
-        heading: '11. Changes',
+        heading: '12. Changes',
         paragraphs: [
           'We may update these Terms. When an update requires your agreement, the Service will ask you to accept the new version before you continue.',
         ],
       },
       {
-        heading: '12. Governing law and contact',
+        heading: '13. Severability',
+        paragraphs: ['If any part of these Terms is found unenforceable, the rest stays in effect.'],
+      },
+      {
+        heading: '14. Entire agreement',
+        paragraphs: ['These Terms and the Privacy Policy are the full agreement about using LexCourt.'],
+      },
+      {
+        heading: '15. Governing law and contact',
         paragraphs: [
-          '[ATTORNEY REVIEW: governing law, venue, operating entity name and a contact address to be added.]',
+          'These Terms are governed by the laws of the Commonwealth of Pennsylvania. LexCourt is operated by [OPERATOR NAME]. Contact: [CONTACT EMAIL].',
         ],
       },
     ],
   },
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Draft of November 10, 2026',
+    updated: 'Draft 2 of November 10, 2026',
     sections: [
       {
         heading: 'In short',
@@ -198,7 +211,7 @@ const en: LegalText = {
         heading: 'Information you enter',
         paragraphs: [
           'Photos, PDFs, text you type or speak, and the details LexCourt finds (such as your hearing date, court address and A-Number) are processed only inside your browser. They are not sent to LexCourt and are erased when you close or reload the page.',
-          'Because LexCourt never receives this information, it has none of it to share with anyone, including government agencies.',
+          'LexCourt never receives your notice or the details from it, so it has none of that information to share with anyone, including government agencies. Our hosting provider’s technical records are described below.',
         ],
       },
       {
@@ -232,7 +245,7 @@ const en: LegalText = {
       {
         heading: 'Changes and contact',
         paragraphs: [
-          'If this policy changes, we will update it here and, if needed, ask you to accept it again. [ATTORNEY REVIEW: operating entity and contact address to be added; confirm any state privacy-law notices required.]',
+          'If this policy changes, we will update it here and, if needed, ask you to accept it again. LexCourt is operated by [OPERATOR NAME]. Contact: [CONTACT EMAIL]. [ATTORNEY REVIEW: confirm any state privacy-law notices required.]',
         ],
       },
     ],
@@ -252,6 +265,7 @@ const es: LegalText = {
     'LexCourt no es un bufete de abogados ni un abogado. Da información legal general, no asesoría legal sobre su caso. Usar LexCourt no crea una relación abogado-cliente.',
     'LexCourt puede cometer errores, sobre todo al leer fotos. Usted debe comparar cada dato con su aviso oficial y con la información de su caso en la corte (por internet en acis.eoir.justice.gov o por teléfono al 1-800-898-7180).',
     'Para recibir consejo sobre su caso, hable con un abogado o un representante acreditado por el Departamento de Justicia. En la aplicación hay una lista de ayuda legal gratuita.',
+    'Si tiene menos de 18 años, use LexCourt con su madre, padre, tutor, un adulto de confianza o un proveedor de servicios legales.',
   ],
   acceptCheckbox:
     'Leí y acepto los Términos de uso y la Política de privacidad. Entiendo que LexCourt no es un bufete de abogados, no da asesoría legal, puede cometer errores, y que yo debo revisar cada dato.',
@@ -299,7 +313,7 @@ const es: LegalText = {
   },
   terms: {
     title: 'Términos de uso',
-    updated: 'Borrador del 10 de noviembre de 2026',
+    updated: 'Borrador 2 del 10 de noviembre de 2026',
     sections: [
       {
         heading: '1. Acuerdo',
@@ -334,52 +348,64 @@ const es: LegalText = {
         ],
       },
       {
-        heading: '6. Recordatorios',
+        heading: '6. Usuarios menores de 18 años',
+        paragraphs: ['Si tiene menos de 18 años, use LexCourt con su madre, padre, tutor, un adulto de confianza o un proveedor de servicios legales.'],
+      },
+      {
+        heading: '7. Recordatorios',
         paragraphs: [
           'Los recordatorios de calendario son solo una ayuda. Dependen de su dispositivo y de su aplicación de calendario, y pueden no funcionar. No reemplazan revisar su aviso y la información de su caso en la corte.',
         ],
       },
       {
-        heading: '7. Otros sitios y servicios',
+        heading: '8. Otros sitios y servicios',
         paragraphs: [
           'El Servicio tiene enlaces a sitios de otros, incluidas agencias del gobierno y organizaciones sin fines de lucro. Si usa la entrada por voz, el servicio de voz de su navegador puede procesar su voz. Si elige “Agregar a Google Calendar”, Google recibe los datos del evento. Estos servicios tienen sus propios términos y políticas de privacidad, y LexCourt no es responsable por ellos.',
         ],
       },
       {
-        heading: '8. Uso aceptable',
+        heading: '9. Uso aceptable',
         paragraphs: [
           'Use el Servicio solo para fines legales. No intente interrumpir, sobrecargar ni dañar el Servicio, ni usarlo para engañar a otras personas sobre su situación legal.',
         ],
       },
       {
-        heading: '9. Sin garantía',
+        heading: '10. Sin garantía',
         paragraphs: [
           'El Servicio se ofrece “tal como está” y “según disponibilidad”, sin garantías de ningún tipo, expresas o implícitas, incluidas las de exactitud, integridad, idoneidad para un fin determinado y no infracción, en la medida máxima que permita la ley. [REVISIÓN DE ABOGADO: confirmar redacción y validez.]',
         ],
       },
       {
-        heading: '10. Limitación de responsabilidad',
+        heading: '11. Limitación de responsabilidad',
         paragraphs: [
           'En la medida máxima que permita la ley, LexCourt y las personas relacionadas con LexCourt no son responsables por ninguna pérdida o daño que resulte de usar el Servicio o de confiar en él, incluidas audiencias o fechas límite perdidas o decisiones en su caso. [REVISIÓN DE ABOGADO: confirmar alcance, límites de protección al consumidor y requisitos de leyes estatales.]',
         ],
       },
       {
-        heading: '11. Cambios',
+        heading: '12. Cambios',
         paragraphs: [
           'Podemos actualizar estos Términos. Cuando un cambio requiera su aceptación, el Servicio le pedirá aceptar la nueva versión antes de continuar.',
         ],
       },
       {
-        heading: '12. Ley aplicable y contacto',
+        heading: '13. Divisibilidad',
+        paragraphs: ['Si alguna parte de estos Términos se considera inaplicable, el resto sigue vigente.'],
+      },
+      {
+        heading: '14. Acuerdo completo',
+        paragraphs: ['Estos Términos y la Política de privacidad son el acuerdo completo sobre el uso de LexCourt.'],
+      },
+      {
+        heading: '15. Ley aplicable y contacto',
         paragraphs: [
-          '[REVISIÓN DE ABOGADO: agregar ley aplicable, jurisdicción, nombre de la entidad responsable y una dirección de contacto.]',
+          'Estos Términos se rigen por las leyes de la Mancomunidad de Pensilvania (Commonwealth of Pennsylvania). LexCourt es operado por [OPERATOR NAME]. Contacto: [CONTACT EMAIL].',
         ],
       },
     ],
   },
   privacy: {
     title: 'Política de privacidad',
-    updated: 'Borrador del 10 de noviembre de 2026',
+    updated: 'Borrador 2 del 10 de noviembre de 2026',
     sections: [
       {
         heading: 'En resumen',
@@ -393,7 +419,7 @@ const es: LegalText = {
         heading: 'Información que usted escribe',
         paragraphs: [
           'Las fotos, los PDF, el texto que usted escribe o dice, y los datos que LexCourt encuentra (como la fecha de su audiencia, la dirección de la corte y su Número A) se procesan solo dentro de su navegador. No se envían a LexCourt y se borran al cerrar o recargar la página.',
-          'Como LexCourt nunca recibe esta información, no tiene nada de ella para compartir con nadie, incluidas las agencias del gobierno.',
+          'LexCourt nunca recibe su aviso ni los datos que contiene, así que no tiene nada de esa información para compartir con nadie, incluidas las agencias del gobierno. Los registros técnicos de nuestro proveedor de alojamiento se describen abajo.',
         ],
       },
       {
@@ -427,7 +453,7 @@ const es: LegalText = {
       {
         heading: 'Cambios y contacto',
         paragraphs: [
-          'Si esta política cambia, la actualizaremos aquí y, si es necesario, le pediremos aceptarla otra vez. [REVISIÓN DE ABOGADO: agregar entidad responsable y dirección de contacto; confirmar avisos requeridos por leyes estatales de privacidad.]',
+          'Si esta política cambia, la actualizaremos aquí y, si es necesario, le pediremos aceptarla otra vez. LexCourt es operado por [OPERATOR NAME]. Contacto: [CONTACT EMAIL]. [REVISIÓN DE ABOGADO: confirmar avisos requeridos por leyes estatales de privacidad.]',
         ],
       },
     ],

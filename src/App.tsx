@@ -486,6 +486,7 @@ function Result({
 
       <section className="card" aria-labelledby="what-title">
         <h2 id="what-title">{t.whatIsThis}</h2>
+        {IS_DRAFT && <p className="draft-inline small">{LEGAL[lang].draftBadge}</p>}
         <h3>{notice.title}</h3>
         {notice.body.map((p) => (
           <p key={p}>{p}</p>
@@ -502,6 +503,7 @@ function Result({
 
       <section className="card" aria-labelledby="must-title">
         <h2 id="must-title">{t.mustKnowTitle}</h2>
+        {IS_DRAFT && <p className="draft-inline small">{LEGAL[lang].draftBadge}</p>}
         <ul className="must">
           {t.mustKnow.map((p) => (
             <li key={p}>{p}</li>

@@ -20,7 +20,7 @@ export interface Links {
   legalDirectory: string;
   /** EOIR Immigration Court Online Resource (ICOR): official plain-language guides. */
   courtGuide: string;
-  /** EOIR Respondent Access: file Form EOIR-33/IC (change of address) online, no account needed. */
+  /** EOIR Respondent Access: file Form EOIR-33/IC (change of address) online. Whether an account is needed is unconfirmed. */
   changeOfAddress: string;
 }
 

@@ -117,10 +117,11 @@ const en: Strings = {
   mustKnowTitle: 'Important things to know',
   mustKnow: [
     'Go to every hearing. If you miss a hearing, the judge can order you deported (“removed”) without you being there. This is called an order “in absentia.”',
+    'ICE check-ins are different from court hearings. If you have both, you must go to both.',
     'Hearing dates can change. Check your case often online at the court’s Automated Case Information site or by phone at 1-800-898-7180. You will need your A-Number.',
     'If you move, tell the immigration court in writing within 5 days, using Form EOIR-33/IC. You can file it online. If the court has an old address, you could miss a notice. Telling ICE or USCIS is separate and does not update the court.',
     'You have the right to a lawyer, but the government does not pay for one. You can ask the judge for time to find a lawyer. Free and low-cost help is listed below.',
-    'The court provides an interpreter at your hearing for free. Tell the court what language you speak best.',
+    'If you do not speak English well, the court provides an interpreter at your hearing at no cost to you. Tell the court what language you speak best.',
     'Bring this notice, a photo ID, and any documents about your case. Arrive early: there is a security check.',
   ],
   helpTitle: 'Free legal help',
@@ -129,7 +130,7 @@ const en: Strings = {
   helpDirectory: 'Nonprofit immigration legal services directory',
   helpCourtGuide: 'Immigration Court Online Resource — official guides in plain language',
   helpCaseStatus: (phone) => `Check your hearing date and case status (online, or call ${phone})`,
-  helpForms: 'Tell the court your new address online (Form EOIR-33/IC, no account needed)',
+  helpForms: 'Tell the court your new address online (Form EOIR-33/IC)',
   notarioWarning:
     'Be careful of “notarios,” “immigration consultants,” or anyone who is not a lawyer or a DOJ-accredited representative. They are not allowed to give legal advice, and some take money and hurt people’s cases.',
   showText: 'Show the text we read',
@@ -155,6 +156,7 @@ const en: Strings = {
       body: [
         'This looks like an order or decision from an immigration judge.',
         'Orders can have strict deadlines, for example to appeal or to file papers. Missing a deadline can hurt your case. Contact free legal help as soon as possible.',
+        'For example, an appeal to the Board of Immigration Appeals usually must be filed within 30 days of the judge’s decision.',
       ],
     },
     unknown: {
@@ -236,10 +238,11 @@ const es: Strings = {
   mustKnowTitle: 'Cosas importantes que debe saber',
   mustKnow: [
     'Vaya a todas sus audiencias. Si falta a una audiencia, el juez puede ordenar su deportación (“remoción”) aunque usted no esté presente. Esto se llama una orden “in absentia”.',
-    'Las fechas de audiencia pueden cambiar. Revise su caso seguido en el sitio de Información Automatizada de Casos de la corte o por teléfono al 1-800-898-7180. Necesitará su Número A.',
+    'Las citas de control con ICE (check-ins) son diferentes de las audiencias en la corte. Si tiene las dos, debe ir a las dos.',
+    'Las fechas de audiencia pueden cambiar. Revise su caso con frecuencia en el sitio de Información Automatizada de Casos de la corte o por teléfono al 1-800-898-7180. Necesitará su Número A.',
     'Si se muda, avise a la corte de inmigración por escrito dentro de 5 días con el Formulario EOIR-33/IC. Puede hacerlo por internet. Si la corte tiene una dirección vieja, podría no recibir un aviso. Avisar a ICE o USCIS es aparte y no cambia su dirección en la corte.',
     'Usted tiene derecho a un abogado, pero el gobierno no lo paga. Puede pedirle al juez tiempo para buscar un abogado. Abajo hay ayuda gratuita o de bajo costo.',
-    'La corte le da un intérprete gratis en su audiencia. Dígale a la corte qué idioma habla mejor.',
+    'Si no habla bien inglés, la corte le da un intérprete en su audiencia sin costo para usted. Dígale a la corte qué idioma habla mejor.',
     'Lleve este aviso, una identificación con foto y los documentos de su caso. Llegue temprano: hay un control de seguridad.',
   ],
   helpTitle: 'Ayuda legal gratuita',
@@ -248,7 +251,7 @@ const es: Strings = {
   helpDirectory: 'Directorio de servicios legales de inmigración sin fines de lucro',
   helpCourtGuide: 'Recurso en línea de la corte de inmigración (ICOR) — guías oficiales en palabras sencillas',
   helpCaseStatus: (phone) => `Revise la fecha de su audiencia y el estado de su caso (por internet o llamando al ${phone})`,
-  helpForms: 'Avise a la corte su nueva dirección por internet (Formulario EOIR-33/IC, no necesita cuenta)',
+  helpForms: 'Avise a la corte su nueva dirección por internet (Formulario EOIR-33/IC)',
   notarioWarning:
     'Cuidado con los “notarios”, “consultores de inmigración” o cualquier persona que no sea abogado ni representante acreditado por el Departamento de Justicia. No pueden dar asesoría legal, y algunos cobran dinero y dañan los casos de las personas.',
   showText: 'Ver el texto que leímos',
@@ -274,6 +277,7 @@ const es: Strings = {
       body: [
         'Parece una orden o decisión de un juez de inmigración.',
         'Las órdenes pueden tener fechas límite estrictas, por ejemplo para apelar o para entregar papeles. No cumplir una fecha límite puede dañar su caso. Busque ayuda legal gratuita lo antes posible.',
+        'Por ejemplo, una apelación ante la Junta de Apelaciones de Inmigración normalmente debe presentarse dentro de los 30 días siguientes a la decisión del juez.',
       ],
     },
     unknown: {
@@ -286,7 +290,7 @@ const es: Strings = {
   },
   hearing: {
     master: {
-      title: 'Audiencia preliminar (master calendar hearing)',
+      title: 'Audiencia de calendario principal (master calendar hearing)',
       body: [
         'Normalmente es una audiencia corta. Muchas personas pueden tener audiencia a la misma hora.',
         'El juez puede confirmar su nombre, dirección e idioma, explicarle sus derechos, preguntarle si tiene abogado, y hablar de los próximos pasos y fechas límite. El juez puede preguntarle si los hechos de la Notificación de Comparecencia son ciertos y qué piensa solicitar.',
@@ -305,6 +309,7 @@ const es: Strings = {
 export const STRINGS: Record<Lang, Strings> = { en, es };
 
 export function detectLang(): Lang {
+  if (typeof window !== 'undefined' && /^\/es(\/|$)/.test(window.location.pathname)) return 'es';
   if (typeof navigator === 'undefined') return 'en';
   return navigator.language?.toLowerCase().startsWith('es') ? 'es' : 'en';
 }

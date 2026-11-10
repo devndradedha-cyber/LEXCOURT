@@ -98,3 +98,44 @@ describe('terms acceptance', () => {
     expect(hasAcceptedTerms(null)).toBe(false);
   });
 });
+
+describe('draft 2 changes', () => {
+  const terms = (lang: 'en' | 'es') => LEGAL[lang].terms.sections;
+  const text = (lang: 'en' | 'es') => allText(LEGAL[lang].terms);
+
+  it('has a "Users under 18" section and the same sentence on the acceptance screen', () => {
+    expect(terms('en')[5].heading).toBe('6. Users under 18');
+    expect(terms('es')[5].heading).toBe('6. Usuarios menores de 18 años');
+    for (const lang of ['en', 'es'] as const) expect(LEGAL[lang].acceptIntro).toContain(terms(lang)[5].paragraphs![0]);
+  });
+
+  it('numbers the Terms sections 1–15 in order, in both languages', () => {
+    for (const lang of ['en', 'es'] as const)
+      expect(terms(lang).map((s) => parseInt(s.heading, 10))).toEqual(Array.from({ length: 15 }, (_, i) => i + 1));
+  });
+
+  it('adds severability, entire agreement and Pennsylvania governing law with placeholders', () => {
+    expect(text('en')).toMatch(/Severability/);
+    expect(text('en')).toMatch(/Entire agreement/);
+    expect(text('es')).toMatch(/Divisibilidad/);
+    expect(text('es')).toMatch(/Acuerdo completo/);
+    for (const lang of ['en', 'es'] as const) {
+      const last = terms(lang)[14].paragraphs![0];
+      expect(last).toMatch(/Pennsylvania|Pensilvania/);
+      expect(last).toContain('[OPERATOR NAME]');
+      expect(last).toContain('[CONTACT EMAIL]');
+      const privacyLast = LEGAL[lang].privacy.sections[6].paragraphs![0];
+      expect(privacyLast).toContain('[OPERATOR NAME]');
+      expect(privacyLast).toContain('[CONTACT EMAIL]');
+    }
+  });
+
+  it('privacy policy says the notice and its details are never received', () => {
+    expect(LEGAL.en.privacy.sections[1].paragraphs![1]).toMatch(/never receives your notice or the details from it/);
+    expect(LEGAL.es.privacy.sections[1].paragraphs![1]).toMatch(/nunca recibe su aviso ni los datos/);
+  });
+
+  it('asks everyone to accept the changed terms again', () => {
+    expect(TERMS_VERSION).not.toBe('2026-11-10-draft');
+  });
+});

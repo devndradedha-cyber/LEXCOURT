@@ -2,9 +2,16 @@
   "name": "LexCourt",
   "short_name": "LexCourt",
   "description": "Understand your immigration court notice. Legal information, not legal advice.",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1d3a5f",
-  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
 }

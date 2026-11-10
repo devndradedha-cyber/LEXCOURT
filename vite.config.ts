@@ -33,6 +33,13 @@ function cspPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), cspPlugin()],
+  build: {
+    rollupOptions: {
+      // Two entry pages with the same app: / (English) and /es/ (Spanish), so
+      // search engines and the home-screen icon get a description in each language.
+      input: { main: 'index.html', es: 'es/index.html' },
+    },
+  },
   test: {
     environment: 'node',
   },

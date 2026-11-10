@@ -22,3 +22,21 @@ describe('LINKS', () => {
     expect(LINKS.es.changeOfAddress).toContain('/es/');
   });
 });
+
+describe('draft 2 text', async () => {
+  const { STRINGS } = await import('./i18n');
+  it('does not claim the EOIR-33/IC form needs no account (unconfirmed)', () => {
+    expect(STRINGS.en.helpForms).not.toMatch(/account/i);
+    expect(STRINGS.es.helpForms).not.toMatch(/cuenta/i);
+  });
+  it('has the new and changed explanations in both languages', () => {
+    expect(STRINGS.en.mustKnow[1]).toMatch(/ICE check-ins are different from court hearings/);
+    expect(STRINGS.es.mustKnow[1]).toMatch(/ICE/);
+    expect(STRINGS.en.mustKnow[5]).toMatch(/at no cost to you/);
+    expect(STRINGS.es.mustKnow[2]).toMatch(/con frecuencia/);
+    expect(STRINGS.es.mustKnow.join(' ')).not.toMatch(/seguido/);
+    expect(STRINGS.es.hearing.master.title).toMatch(/^Audiencia de calendario principal/);
+    expect(STRINGS.en.notice.judge_order.body[2]).toMatch(/Board of Immigration Appeals.*30 days/);
+    expect(STRINGS.en.mustKnow).toHaveLength(STRINGS.es.mustKnow.length);
+  });
+});

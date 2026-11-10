@@ -19,7 +19,7 @@ A free, mobile-first web app for people in U.S. immigration court who don't have
 5. **Reminders:** it creates a calendar file (`.ics`) with alerts 1 week before, 1 day before, and 2 hours before the hearing. It also offers a pre-filled Google Calendar link.
 6. It links to free legal aid and court resources: the EOIR pro bono list, the ImmigrationAdvocates.net directory, EOIR case status (ACIS and 1-800-898-7180), ICOR guides, and the online EOIR-33/IC change-of-address form. Court links open in the user's language.
 
-The app is in **English and Spanish**. It picks the language from the browser, and the user can switch it at any time.
+The app is in **English and Spanish**. It picks the language from the browser, and the user can switch it at any time. The Spanish address `/es/` opens the app in Spanish and gives search engines and the home-screen icon a Spanish description (`es/index.html`, `public/es/manifest.webmanifest`).
 
 ## Check a representative and Report a problem (draft)
 
@@ -94,6 +94,8 @@ Every push then deploys automatically. Other branches get their own preview URLs
 ## Before launch
 
 - [ ] Open every link in `src/lib/resources.ts` in a browser. On 2026-11-10 they were checked against search-engine indexes of the official sites, but the sites themselves couldn't be opened from the build environment. Confirm the Spanish (`/es/`) versions especially.
+- [ ] Fill in `[OPERATOR NAME]` and `[CONTACT EMAIL]` in the Terms (section 15) and the Privacy Policy (`src/lib/legal.ts`).
+- [ ] Confirm whether the online EOIR-33/IC form needs an account. The claim was removed because it couldn't be checked.
 - [ ] **Have a licensed attorney review and approve the Disclaimer, Terms of Use and Privacy Policy in `src/lib/legal.ts`** and resolve every `[ATTORNEY REVIEW]` note: governing law, operating entity, contact address, warranty and liability wording, and state privacy notices. Then set `IS_DRAFT = false` and give `TERMS_VERSION` a new, non-draft value.
 - [ ] Have an attorney review the **Check a representative** and **Report a problem** text and the routing rules (Parts 9–10 of the review document). Then set `TOOLS_DRAFT = false` in `src/lib/toolsText.ts`.
 - [ ] Open every link in `OFFICIAL` and `STATE_LAWYER_LOOKUPS` in a browser. Consider adding official lawyer searches for more states.
