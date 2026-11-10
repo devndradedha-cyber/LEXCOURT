@@ -29,6 +29,7 @@ The app is in **English and Spanish**. It picks the language from the browser, a
 - **Before first use,** people must tick a box agreeing to the Terms of Use and Privacy Policy. Until they do, they can still read the legal pages and the free legal help list.
 - **Full documents** in English and Spanish: `#/disclaimer`, `#/terms`, `#/privacy` (linked in the footer).
 - **Remembering acceptance:** the only thing stored is the accepted `TERMS_VERSION`, in `localStorage`. To make everyone accept again after a change, update `TERMS_VERSION`. If storage is blocked, people are simply asked again.
+- **Attorney review document:** `npm run review-doc` writes `review/LexCourt-text-for-attorney-review.docx`, a Word file with every piece of user-facing text in English and Spanish side by side. It's read straight from the source, and each row has an ID and its source key. The `review/` folder isn't committed.
 - **Tests:** `src/lib/legal.test.ts` checks that both languages contain every required statement and have the same sections.
 
 ## Privacy
