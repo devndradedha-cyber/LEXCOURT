@@ -1,0 +1,28 @@
+{
+  "name": "lexcourt",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Free, mobile-first, privacy-first helper for people in U.S. immigration court without a lawyer.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pdfjs-dist": "4.10.38",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tesseract.js": "5.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "typescript": "5.6.3",
+    "vite": "6.0.7",
+    "vitest": "2.1.8"
+  }
+}
