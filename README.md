@@ -41,6 +41,16 @@ npm run build      # type-check + production build into dist/
 
 It's a static site, so `dist/` can be hosted anywhere (GitHub Pages, Netlify, Cloudflare Pages, etc.).
 
+### Deploying to Vercel
+
+`vercel.json` holds the whole setup: build command, output folder, and security headers (the Content-Security-Policy as a real header, plus `frame-ancestors 'none'`, `no-referrer`, and camera/microphone limited to this site). Nothing needs to be set in the Vercel dashboard.
+
+1. On vercel.com, choose **Add New → Project** and import `devndradedha-cyber/LEXCOURT`.
+2. Keep the detected settings (Vite) and click **Deploy**.
+3. Under **Settings → Environments → Production**, pick the branch that should go live (for example `main`).
+
+Every push then deploys automatically. Other branches get their own preview URLs.
+
 ### Code map
 
 | File | Purpose |
