@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { extractNoticeFacts, type NoticeFacts } from './lib/extract';
 import { STRINGS, detectLang, type Lang } from './lib/i18n';
+import { IS_DRAFT, LEGAL, hasAcceptedTerms, recordTermsAccepted, type LegalDoc } from './lib/legal';
 import { fileToText, type Progress } from './lib/readFile';
 import { downloadIcs, googleCalendarUrl, type ReminderInput } from './lib/reminders';
 import { LINKS } from './lib/resources';
@@ -8,9 +9,34 @@ import { speechSupported, startListening, type Listener } from './lib/speech';
 
 type Phase = { kind: 'start' } | { kind: 'working'; label: string; fraction: number } | { kind: 'result' };
 
+type Route = 'home' | 'disclaimer' | 'terms' | 'privacy';
+const LEGAL_ROUTES: Route[] = ['disclaimer', 'terms', 'privacy'];
+
+function readRoute(): Route {
+  const r = window.location.hash.replace(/^#\/?/, '') as Route;
+  return LEGAL_ROUTES.includes(r) ? r : 'home';
+}
+
+/** Simple hash routing (#/terms, #/privacy, #/disclaimer) so pages work on any static host. */
+function useRoute(): Route {
+  const [route, setRoute] = useState<Route>(readRoute);
+  useEffect(() => {
+    const onHash = () => {
+      setRoute(readRoute());
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  return route;
+}
+
 export default function App() {
   const [lang, setLang] = useState<Lang>(detectLang);
   const t = STRINGS[lang];
+  const legal = LEGAL[lang];
+  const route = useRoute();
+  const [accepted, setAccepted] = useState<boolean>(() => hasAcceptedTerms());
   const [phase, setPhase] = useState<Phase>({ kind: 'start' });
   const [error, setError] = useState<string | null>(null);
   const [sourceText, setSourceText] = useState('');
@@ -77,12 +103,24 @@ export default function App() {
         </button>
       </header>
 
-      <main>
-        <section className="notice-box" aria-labelledby="disclaimer-title">
-          <h2 id="disclaimer-title">{t.disclaimerTitle}</h2>
-          <p>{t.disclaimer}</p>
-        </section>
+      <ShortDisclaimer lang={lang} />
 
+      <main>
+        {route !== 'home' && <LegalPage lang={lang} doc={legal[route]} />}
+
+        {route === 'home' && !accepted && (
+          <AcceptTerms
+            lang={lang}
+            onAccept={() => {
+              recordTermsAccepted();
+              setAccepted(true);
+              window.scrollTo(0, 0);
+            }}
+          />
+        )}
+
+        {route === 'home' && accepted && (
+          <>
         {phase.kind === 'start' && <StartScreen lang={lang} error={error} onFile={onFile} onText={analyze} />}
 
         {phase.kind === 'working' && (
@@ -96,20 +134,122 @@ export default function App() {
           <Result lang={lang} facts={facts} setFacts={setFacts} sourceText={sourceText} onReset={reset} headingRef={resultRef} />
         )}
 
-        <LegalHelp lang={lang} />
+          </>
+        )}
 
-        <section className="card subtle" aria-labelledby="privacy-title">
-          <h2 id="privacy-title">{t.privacyTitle}</h2>
-          <ul>
-            {t.privacy.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-        </section>
+        {route === 'home' && <LegalHelp lang={lang} />}
+
+        {route === 'home' && (
+          <section className="card subtle" aria-labelledby="privacy-title">
+            <h2 id="privacy-title">{t.privacyTitle}</h2>
+            <ul>
+              {t.privacy.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+            <a href="#/privacy">{legal.privacy.title} →</a>
+          </section>
+        )}
       </main>
 
-      <footer>{t.footer}</footer>
+      <footer>
+        <nav aria-label={legal.shortLinks.terms} className="legal-links">
+          <a href="#/disclaimer">{legal.shortLinks.disclaimer}</a>
+          <a href="#/terms">{legal.shortLinks.terms}</a>
+          <a href="#/privacy">{legal.shortLinks.privacy}</a>
+        </nav>
+        <p>{t.footer}</p>
+        {IS_DRAFT && <p className="draft-inline">{legal.draftBadge}</p>}
+      </footer>
     </>
+  );
+}
+
+/** Short disclaimer shown at the top of every screen. */
+function ShortDisclaimer({ lang }: { lang: Lang }) {
+  const legal = LEGAL[lang];
+  return (
+    <aside className="short-disclaimer" aria-label={legal.shortLinks.disclaimer}>
+      <p>
+        <strong>⚠️ </strong>
+        {legal.short}{' '}
+        <a href="#/disclaimer">{legal.shortLinks.disclaimer}</a>
+      </p>
+    </aside>
+  );
+}
+
+function DraftBanner({ lang }: { lang: Lang }) {
+  if (!IS_DRAFT) return null;
+  const legal = LEGAL[lang];
+  return (
+    <div className="draft-banner" role="note">
+      <strong>{legal.draftBadge}</strong>
+      <span>{legal.draftNotice}</span>
+    </div>
+  );
+}
+
+function AcceptTerms({ lang, onAccept }: { lang: Lang; onAccept: () => void }) {
+  const legal = LEGAL[lang];
+  const [checked, setChecked] = useState(false);
+  return (
+    <section className="card" aria-labelledby="accept-title">
+      <DraftBanner lang={lang} />
+      <h1 id="accept-title">{legal.acceptTitle}</h1>
+      {legal.acceptIntro.map((p) => (
+        <p key={p}>{p}</p>
+      ))}
+      <p className="row wrap legal-inline-links">
+        <a href="#/terms">{legal.terms.title}</a>
+        <a href="#/privacy">{legal.privacy.title}</a>
+        <a href="#/disclaimer">{legal.disclaimer.title}</a>
+      </p>
+      <label className="accept">
+        <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+        <span>{legal.acceptCheckbox}</span>
+      </label>
+      <button className="btn primary big" disabled={!checked} onClick={onAccept}>
+        {legal.acceptButton}
+      </button>
+      <p className="hint small">{legal.acceptStorageNote}</p>
+    </section>
+  );
+}
+
+function LegalPage({ lang, doc }: { lang: Lang; doc: LegalDoc }) {
+  const legal = LEGAL[lang];
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => ref.current?.focus(), [doc]);
+  return (
+    <article className="card legal-doc" aria-labelledby="legal-title">
+      <a href="#/" className="back">
+        {legal.back}
+      </a>
+      <DraftBanner lang={lang} />
+      <h1 id="legal-title" tabIndex={-1} ref={ref}>
+        {doc.title}
+      </h1>
+      <p className="hint small">{doc.updated}</p>
+      {doc.sections.map((s) => (
+        <section key={s.heading}>
+          <h2>{s.heading}</h2>
+          {s.paragraphs?.map((p) => (
+            <p key={p}>{p}</p>
+          ))}
+          {s.bullets && (
+            <ul>
+              {s.bullets.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+      <a href="#/" className="btn big">
+        {legal.back}
+      </a>
+    </article>
   );
 }
 

@@ -10,8 +10,6 @@ export interface Explanation {
 interface Strings {
   appTagline: string;
   langToggle: string;
-  disclaimerTitle: string;
-  disclaimer: string;
   privacyTitle: string;
   privacy: string[];
   startTitle: string;
@@ -69,13 +67,10 @@ interface Strings {
 const en: Strings = {
   appTagline: 'Understand your immigration court notice',
   langToggle: 'Español',
-  disclaimerTitle: 'Legal information, not legal advice',
-  disclaimer:
-    'LexCourt explains documents in plain language. It is not a lawyer and cannot tell you what to do in your case. For advice about your case, talk to a lawyer or an accredited representative. Free help is listed below.',
   privacyTitle: 'Your privacy',
   privacy: [
     'Your notice is read on this phone or computer. We do not upload it, and we do not keep it.',
-    'We have no accounts and no tracking. When you close this page, what you entered is gone.',
+    'We have no accounts and no tracking. When you close this page, what you entered is gone. This device only remembers that you accepted the terms.',
     'Reminders go into your own calendar. We never see them.',
   ],
   startTitle: 'Read my court notice',
@@ -138,7 +133,7 @@ const en: Strings = {
   notarioWarning:
     'Be careful of “notarios,” “immigration consultants,” or anyone who is not a lawyer or a DOJ-accredited representative. They are not allowed to give legal advice, and some take money and hurt people’s cases.',
   showText: 'Show the text we read',
-  footer: 'LexCourt is free. It gives legal information, not legal advice. It is not part of the government or the court.',
+  footer: 'LexCourt is free. It is not a law firm, gives legal information but not legal advice, and is not part of the government or the court.',
   notice: {
     notice_of_hearing: {
       title: 'Notice of Hearing',
@@ -191,13 +186,10 @@ const en: Strings = {
 const es: Strings = {
   appTagline: 'Entienda su aviso de la corte de inmigración',
   langToggle: 'English',
-  disclaimerTitle: 'Información legal, no asesoría legal',
-  disclaimer:
-    'LexCourt explica documentos en palabras sencillas. No es un abogado y no puede decirle qué hacer en su caso. Para recibir consejo sobre su caso, hable con un abogado o un representante acreditado. Abajo hay ayuda gratuita.',
   privacyTitle: 'Su privacidad',
   privacy: [
     'Su aviso se lee en este teléfono o computadora. No lo subimos a internet y no lo guardamos.',
-    'No hay cuentas ni rastreo. Cuando cierre esta página, lo que escribió se borra.',
+    'No hay cuentas ni rastreo. Cuando cierre esta página, lo que escribió se borra. Este dispositivo solo recuerda que usted aceptó los términos.',
     'Los recordatorios van a su propio calendario. Nosotros nunca los vemos.',
   ],
   startTitle: 'Leer mi aviso de la corte',
@@ -260,7 +252,7 @@ const es: Strings = {
   notarioWarning:
     'Cuidado con los “notarios”, “consultores de inmigración” o cualquier persona que no sea abogado ni representante acreditado por el Departamento de Justicia. No pueden dar asesoría legal, y algunos cobran dinero y dañan los casos de las personas.',
   showText: 'Ver el texto que leímos',
-  footer: 'LexCourt es gratis. Da información legal, no asesoría legal. No es parte del gobierno ni de la corte.',
+  footer: 'LexCourt es gratis. No es un bufete de abogados, da información legal pero no asesoría legal, y no es parte del gobierno ni de la corte.',
   notice: {
     notice_of_hearing: {
       title: 'Aviso de Audiencia (Notice of Hearing)',

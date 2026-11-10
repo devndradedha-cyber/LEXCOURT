@@ -93,3 +93,18 @@ a { color: var(--brand); }
 summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
 .source { white-space: pre-wrap; word-break: break-word; font-size: 14px; max-height: 320px; overflow: auto; }
 footer { max-width: 640px; margin: 0 auto; padding: 8px 16px 32px; padding-bottom: max(32px, env(safe-area-inset-bottom)); color: var(--muted); font-size: 14px; text-align: center; }
+
+/* Legal: short disclaimer (every screen), draft marking, acceptance, documents */
+.short-disclaimer { background: var(--warn-bg); border-bottom: 2px solid var(--warn-border); }
+.short-disclaimer p { max-width: 640px; margin: 0 auto; padding: 10px 16px; font-size: 15px; line-height: 1.45; }
+.short-disclaimer a { font-weight: 600; white-space: nowrap; }
+.draft-banner { display: flex; flex-direction: column; gap: 2px; margin: 0 0 14px; padding: 10px 12px; border: 2px dashed var(--error); border-radius: 10px; color: var(--error); font-size: 15px; }
+.draft-banner strong { letter-spacing: 0.03em; }
+.draft-inline { color: var(--error); font-weight: 600; }
+.accept { display: flex; gap: 12px; align-items: flex-start; margin: 18px 0 4px; padding: 14px; border: 2px solid var(--border); border-radius: 12px; font-weight: 600; cursor: pointer; }
+.accept input { width: 26px; height: 26px; min-height: 0; flex-shrink: 0; margin: 2px 0 0; accent-color: var(--brand); }
+.legal-inline-links { gap: 16px; font-weight: 600; }
+.legal-doc h2 { font-size: 19px; margin-top: 22px; }
+.legal-doc .back { display: inline-block; margin-bottom: 12px; font-weight: 600; min-height: 44px; }
+.legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; margin-bottom: 8px; }
+.legal-links a { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }

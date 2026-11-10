@@ -21,9 +21,19 @@ A free, mobile-first web app for people in U.S. immigration court who don't have
 
 The app is in **English and Spanish**. It picks the language from the browser, and the user can switch it at any time.
 
+## Disclaimer, Terms of Use and Privacy Policy (draft)
+
+> ⚠️ **DRAFT — needs attorney review.** The legal text in `src/lib/legal.ts` hasn't been reviewed by a lawyer. The app shows it as a draft on every legal page.
+
+- **Every screen** shows a short disclaimer: LexCourt is not a law firm, doesn't give legal advice, creates no attorney-client relationship, and can make mistakes. Users must check every detail against their official notice and the court's case information, and should get help from an attorney or accredited representative.
+- **Before first use,** people must tick a box agreeing to the Terms of Use and Privacy Policy. Until they do, they can still read the legal pages and the free legal help list.
+- **Full documents** in English and Spanish: `#/disclaimer`, `#/terms`, `#/privacy` (linked in the footer).
+- **Remembering acceptance:** the only thing stored is the accepted `TERMS_VERSION`, in `localStorage`. To make everyone accept again after a change, update `TERMS_VERSION`. If storage is blocked, people are simply asked again.
+- **Tests:** `src/lib/legal.test.ts` checks that both languages contain every required statement and have the same sections.
+
 ## Privacy
 
-- **No backend, no accounts, no analytics, no cookies, no storage.** Nothing goes into `localStorage` or a server. Closing the page removes everything.
+- **No backend, no accounts, no analytics, no cookies.** Nothing the user enters is stored or sent to a server, and closing the page removes it. The only thing saved is the accepted terms version, in `localStorage`.
 - Photos and PDFs are processed in the browser using `pdf.js` and `tesseract.js` OCR. The file is never uploaded.
 - **No CDN.** The OCR engine (worker + WebAssembly core) and the English and Spanish models (~5 MB, downloaded once when someone first reads a photo) are served by LexCourt itself from `/tesseract/`. `scripts/copy-ocr-assets.mjs` copies them from `node_modules` before every `dev` and `build`. The browser caches the models (not any user data) in IndexedDB so later reads are faster.
 - The production build sets a **Content-Security-Policy** that only allows scripts and data requests to LexCourt's own origin, so the browser itself blocks anything from being sent elsewhere. Links the user taps still open normally.
@@ -69,6 +79,8 @@ Every push then deploys automatically. Other branches get their own preview URLs
 ## Before launch
 
 - [ ] Open every link in `src/lib/resources.ts` in a browser. On 2026-11-10 they were checked against search-engine indexes of the official sites, but the sites themselves couldn't be opened from the build environment. Confirm the Spanish (`/es/`) versions especially.
+- [ ] **Have a licensed attorney review and approve the Disclaimer, Terms of Use and Privacy Policy in `src/lib/legal.ts`** and resolve every `[ATTORNEY REVIEW]` note: governing law, operating entity, contact address, warranty and liability wording, and state privacy notices. Then set `IS_DRAFT = false` and give `TERMS_VERSION` a new, non-draft value.
+- [ ] Have a qualified legal translator review the Spanish legal text.
 - [ ] Have an immigration attorney or DOJ-accredited representative review all text in `src/lib/i18n.ts`.
 - [ ] Have a native Spanish speaker review the Spanish text, ideally with people who will use the app.
 - [ ] Test OCR on real (redacted) notices and phone photos, and tune `extract.ts`.
