@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { GlossaryText, ListenButton } from './Reading';
 import type { Lang } from '../lib/i18n';
 import { OFFICIAL, STATE_LAWYER_LOOKUPS, US_STATES } from '../lib/resources';
 import { TOOLS } from '../lib/toolsText';
@@ -21,6 +22,8 @@ export function CheckRepresentative({ lang, onReport }: { lang: Lang; onReport: 
   const stateName = US_STATES.find(([c]) => c === state)?.[1];
   const lookup = state ? STATE_LAWYER_LOOKUPS[state] : undefined;
   const signCount = signs.filter(Boolean).length;
+  const introRef = useRef<HTMLElement>(null);
+  const stepsRef = useRef<HTMLElement>(null);
 
   const showLawyer = role === 'lawyer' || role === 'unsure';
   const showAccredited = role === 'accredited' || role === 'unsure';
@@ -28,11 +31,14 @@ export function CheckRepresentative({ lang, onReport }: { lang: Lang; onReport: 
 
   return (
     <>
-      <section className="card" aria-labelledby="check-title">
+      <section className="card" aria-labelledby="check-title" ref={introRef}>
         <ToolDraftBanner lang={lang} />
         <h1 id="check-title">{t.title}</h1>
+        <ListenButton lang={lang} target={introRef} />
         {t.intro.map((p) => (
-          <p key={p}>{p}</p>
+          <p key={p}>
+            <GlossaryText text={p} lang={lang} />
+          </p>
         ))}
         <InfoNotAdvice lang={lang} />
 
@@ -71,8 +77,9 @@ export function CheckRepresentative({ lang, onReport }: { lang: Lang; onReport: 
       </section>
 
       {role && (
-        <section className="card" aria-labelledby="steps-title" aria-live="polite">
+        <section className="card" aria-labelledby="steps-title" aria-live="polite" ref={stepsRef}>
           <h2 id="steps-title">{t.stepsTitle(who)}</h2>
+          <ListenButton lang={lang} target={stepsRef} />
           {name.trim() && (
             <div className="row wrap">
               <CopyButton text={name.trim()} lang={lang} />

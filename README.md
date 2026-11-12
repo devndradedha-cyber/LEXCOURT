@@ -35,6 +35,27 @@ The app is in **English, Spanish, Hindi (Devanagari), Punjabi (Gurmukhi) and Urd
 - **Same privacy rules:** answers live only in the page's memory, nothing is stored or sent, and reloading clears everything. The tests check that the only thing in `localStorage` is the terms acceptance.
 - Links are in `src/lib/resources.ts` (`OFFICIAL`, `STATE_LAWYER_LOOKUPS`). They were checked against search-engine indexes on 2026-11-10, but the sites themselves couldn't be opened from the build environment.
 
+## Case status, read aloud, glossary and legal aid summary (draft)
+
+> ⚠️ **DRAFT — needs attorney review** (and native speaker review for Hindi, Punjabi and Urdu). The text is in `src/lib/featuresText.ts` and `src/lib/locales/*.features.ts`.
+
+- **Case status** (`#/status`): step-by-step help for checking the court's Automated Case Information, online or by phone (1-800-898-7180, TDD 1-800-828-1120).
+  - The A-Number is filled in from the notice, and a button copies the 9 digits (8-digit numbers get a leading 0).
+  - An optional monthly calendar reminder repeats 12 times. The A-Number is only included if the person ticks a box, because calendars often sync online.
+  - **LexCourt never connects to the court**: nothing is fetched or sent.
+- **Read aloud:** a 🔊 button on each explanation, the case status page, the legal pages, and the representative and report pages.
+  - It reads in the selected language with `speechSynthesis`.
+  - **Only on-device voices** (`localService`) are used, so no text is sent to an online voice service. If there's no voice for the language, it shows a note.
+  - Text is spoken one sentence at a time (`src/lib/readAloud.ts`).
+- **Glossary:** 10 terms (removal, relief, asylum, in absentia, Notice to Appear, master calendar hearing, individual hearing, A-Number, accredited representative, appeal).
+  - Terms are underlined in explanations; tapping one shows its meaning, and a "Words to know" list shows all ten.
+  - Matching works in all five scripts (`src/lib/glossary.ts`).
+- **Legal aid summary:** a one-page summary on the results screen showing the notice type, hearing date and time, court address, A-Number (optional) and the person's questions, with lines for notes.
+  - **Print or save as PDF**: a print stylesheet prints only the summary.
+  - **Download**: a self-contained HTML page with no scripts and no outside resources.
+  - **Share**: the share sheet, with text.
+  - Nothing is sent automatically. The summary can be made in English, Spanish or the person's language.
+
 ## Hindi, Punjabi and Urdu (draft translations)
 
 > ⚠️ **DRAFT, needs native speaker review.** Every Hindi, Punjabi and Urdu screen shows a notice saying the translation is a draft.

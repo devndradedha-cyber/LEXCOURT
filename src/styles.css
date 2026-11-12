@@ -117,7 +117,7 @@ footer { max-width: 640px; margin: 0 auto; padding: 8px 16px 32px; padding-botto
 .legal-links a { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
 
 /* Tool tabs */
-.tool-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 640px; margin: 0 auto; padding: 10px 16px 0; }
+.tool-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 640px; margin: 0 auto; padding: 10px 16px 0; }
 .tool-nav a { text-align: center; padding: 6px 6px; min-height: 48px; display: flex; align-items: center; justify-content: center; line-height: 1.2;
   border: 2px solid var(--border); border-radius: 12px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; background: var(--card); }
 .tool-nav a[aria-current='page'] { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
@@ -170,3 +170,48 @@ textarea.summary { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, m
 /* Numbers, dates, times, A-Numbers and codes stay left to right. */
 input[type='date'], input[type='time'], input[inputmode='numeric'] { direction: ltr; }
 [dir='rtl'] input[type='date'], [dir='rtl'] input[type='time'], [dir='rtl'] input[inputmode='numeric'] { text-align: right; }
+
+/* Four tabs: two rows of two on narrow phones. */
+@media (max-width: 480px) { .tool-nav { grid-template-columns: repeat(2, 1fr); } }
+
+/* Read aloud */
+.listen { margin: 6px 0 10px; }
+.listen-btn { min-height: 44px; padding: 6px 14px; font-size: 16px; }
+.listen .hint { margin: 6px 0 0; }
+
+/* Glossary: underlined terms open a short meaning right below. */
+.term { cursor: pointer; border-radius: 3px;
+  text-decoration: underline dotted 2px; text-underline-offset: 4px; text-decoration-color: var(--brand); }
+.term:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.term[aria-expanded='true'] { text-decoration-style: solid; background: var(--info-bg); border-radius: 4px; }
+.term-def { display: block; margin: 8px 0; padding: 10px 12px; background: var(--info-bg); border-inline-start: 4px solid var(--brand); border-radius: 8px; font-size: 16px; font-weight: 400; }
+.term-def strong { display: block; margin-bottom: 2px; }
+.term-def-close { display: inline-block; margin-top: 6px; font: inherit; font-size: 15px; font-weight: 600; color: var(--brand); background: none; border: 0; padding: 6px 0; min-height: 36px; cursor: pointer; text-decoration: underline; }
+.glossary summary { font-size: 18px; }
+.glossary dl { margin: 8px 0 0; }
+.glossary dt { font-weight: 700; margin-top: 12px; }
+.glossary dd { margin: 2px 0 0; }
+.block { display: block; }
+
+/* Legal aid summary preview (also what is printed) */
+.aid-preview { background: #fff; color: #111; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 8px 0 12px; font-size: 15px; }
+.aid-preview h1 { font-size: 20px; margin: 0; }
+.aid-preview h2 { font-size: 16px; margin: 14px 0 4px; }
+.aid-preview .made { color: #555; font-size: 13px; margin: 2px 0 10px; }
+.aid-preview table { width: 100%; border-collapse: collapse; }
+.aid-preview th, .aid-preview td { border: 1px solid #bbb; padding: 6px 8px; text-align: start; vertical-align: top; overflow-wrap: anywhere; }
+.aid-preview th { width: 38%; background: #f1f3f6; font-weight: 600; }
+.aid-preview ol { padding-inline-start: 22px; margin: 0; }
+.aid-preview .line { border-bottom: 1px solid #999; height: 26px; }
+.aid-preview footer { margin-top: 14px; padding: 8px 0 0; border-top: 1px solid #ccc; font-size: 12px; color: #444; text-align: start; max-width: none; }
+.aid-actions .btn { flex: 1 1 auto; }
+.info.small { font-size: 15px; }
+
+/* Print only the legal aid summary. */
+@media print {
+  body { background: #fff; }
+  /* The app renders inside #root: keep #root and main, hide everything else around the summary. */
+  body > :not(#root), #root > :not(main), main > :not(:has(.print-area)), :has(> .print-area) > :not(.print-area) { display: none !important; }
+  main, :has(> .print-area) { display: block !important; padding: 0 !important; margin: 0 !important; border: 0 !important; max-width: none !important; background: #fff !important; }
+  .print-area { border: 0; margin: 0; padding: 0; }
+}

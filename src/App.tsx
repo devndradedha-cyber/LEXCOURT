@@ -9,14 +9,18 @@ import { speechSupported, startListening, type Listener } from './lib/speech';
 import { TOOLS } from './lib/toolsText';
 import { CheckRepresentative } from './components/CheckRepresentative';
 import { ReportProblem } from './components/ReportProblem';
+import { CaseStatus } from './components/CaseStatus';
+import { AidSummary } from './components/AidSummary';
+import { GlossaryText, ListenButton, WordsToKnow } from './components/Reading';
+import { FEATURES } from './lib/featuresText';
 
 type Phase = { kind: 'start' } | { kind: 'working'; label: string; fraction: number } | { kind: 'result' };
 
 type LegalRoute = 'disclaimer' | 'terms' | 'privacy';
-type ToolRoute = 'home' | 'check' | 'report';
+type ToolRoute = 'home' | 'status' | 'check' | 'report';
 type Route = ToolRoute | LegalRoute;
 const LEGAL_ROUTES: Route[] = ['disclaimer', 'terms', 'privacy'];
-const TOOL_ROUTES: Route[] = ['check', 'report'];
+const TOOL_ROUTES: Route[] = ['status', 'check', 'report'];
 const isLegal = (r: Route): r is LegalRoute => LEGAL_ROUTES.includes(r);
 
 function readRoute(): Route {
@@ -166,6 +170,8 @@ export default function App() {
           </>
         )}
 
+        {route === 'status' && accepted && <CaseStatus lang={lang} aNumberFromNotice={facts?.aNumber ?? null} />}
+
         {route === 'check' && accepted && (
           <CheckRepresentative lang={lang} onReport={() => (window.location.hash = '#/report')} />
         )}
@@ -200,11 +206,12 @@ export default function App() {
   );
 }
 
-/** Tabs for the three tools. Plain links, so the browser's back button works. */
+/** Tabs for the four tools. Plain links, so the browser's back button works. */
 function ToolNav({ lang, route }: { lang: Lang; route: ToolRoute }) {
   const n = TOOLS[lang].nav;
   const tabs: [ToolRoute, string, string][] = [
     ['home', '#/', n.notice],
+    ['status', '#/status', FEATURES[lang].status.nav],
     ['check', '#/check', n.check],
     ['report', '#/report', n.report],
   ];
@@ -275,9 +282,10 @@ function AcceptTerms({ lang, onAccept }: { lang: Lang; onAccept: () => void }) {
 function LegalPage({ lang, doc }: { lang: Lang; doc: LegalDoc }) {
   const legal = LEGAL[lang];
   const ref = useRef<HTMLHeadingElement>(null);
+  const docRef = useRef<HTMLElement>(null);
   useEffect(() => ref.current?.focus(), [doc]);
   return (
-    <article className="card legal-doc" aria-labelledby="legal-title">
+    <article className="card legal-doc" aria-labelledby="legal-title" ref={docRef}>
       <a href="#/" className="back">
         {legal.back}
       </a>
@@ -286,6 +294,7 @@ function LegalPage({ lang, doc }: { lang: Lang; doc: LegalDoc }) {
         {doc.title}
       </h1>
       <p className="hint small">{doc.updated}</p>
+      <ListenButton lang={lang} target={docRef} />
       {doc.sections.map((s) => (
         <section key={s.heading}>
           <h2>{s.heading}</h2>
@@ -438,6 +447,8 @@ function Result({
   const update = (patch: Partial<NoticeFacts>) => setFacts({ ...facts, ...patch });
   const notice = t.notice[facts.noticeType];
   const hearing = facts.hearingType !== 'unknown' ? t.hearing[facts.hearingType] : null;
+  const whatRef = useRef<HTMLElement>(null);
+  const mustRef = useRef<HTMLElement>(null);
 
   const reminder: ReminderInput | null = facts.date
     ? {
@@ -498,8 +509,17 @@ function Result({
           </label>
         </div>
 
-        {facts.dateToBeSet && <p className="info">{t.dateToBeSet}</p>}
+        {facts.dateToBeSet && (
+          <p className="info">
+            <GlossaryText text={t.dateToBeSet} lang={lang} />
+          </p>
+        )}
         {facts.remote && <p className="info">{t.remoteNote}</p>}
+        <div className="row wrap">
+          <a className="btn" href="#/status">
+            🔎 {FEATURES[lang].status.title}
+          </a>
+        </div>
       </section>
 
       <section className="card" aria-labelledby="reminders-title">
@@ -519,32 +539,49 @@ function Result({
         )}
       </section>
 
-      <section className="card" aria-labelledby="what-title">
+      <section className="card" aria-labelledby="what-title" ref={whatRef}>
         <h2 id="what-title">{t.whatIsThis}</h2>
-        {IS_DRAFT && <p className="draft-inline small">{LEGAL[lang].draftBadge}</p>}
-        <h3>{notice.title}</h3>
+        {IS_DRAFT && <p className="draft-inline small" data-no-read>{LEGAL[lang].draftBadge}</p>}
+        <ListenButton lang={lang} target={whatRef} />
+        <p className="hint small" data-no-read>{FEATURES[lang].glossary.tapHint}</p>
+        <h3>
+          <GlossaryText text={notice.title} lang={lang} />
+        </h3>
         {notice.body.map((p) => (
-          <p key={p}>{p}</p>
+          <p key={p}>
+            <GlossaryText text={p} lang={lang} />
+          </p>
         ))}
         {hearing && (
           <>
-            <h3>{hearing.title}</h3>
+            <h3>
+              <GlossaryText text={hearing.title} lang={lang} />
+            </h3>
             {hearing.body.map((p) => (
-              <p key={p}>{p}</p>
+              <p key={p}>
+                <GlossaryText text={p} lang={lang} />
+              </p>
             ))}
           </>
         )}
       </section>
 
-      <section className="card" aria-labelledby="must-title">
+      <section className="card" aria-labelledby="must-title" ref={mustRef}>
         <h2 id="must-title">{t.mustKnowTitle}</h2>
-        {IS_DRAFT && <p className="draft-inline small">{LEGAL[lang].draftBadge}</p>}
+        {IS_DRAFT && <p className="draft-inline small" data-no-read>{LEGAL[lang].draftBadge}</p>}
+        <ListenButton lang={lang} target={mustRef} />
         <ul className="must">
           {t.mustKnow.map((p) => (
-            <li key={p}>{p}</li>
+            <li key={p}>
+              <GlossaryText text={p} lang={lang} />
+            </li>
           ))}
         </ul>
       </section>
+
+      <AidSummary lang={lang} facts={facts} />
+
+      <WordsToKnow lang={lang} />
 
       <details className="card subtle">
         <summary>{t.showText}</summary>

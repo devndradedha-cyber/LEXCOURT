@@ -37,6 +37,7 @@ import { LEGAL, TERMS_VERSION, type LegalDoc } from '../src/lib/legal';
 import { LINKS, OFFICIAL, STATE_LAWYER_LOOKUPS } from '../src/lib/resources';
 import { recommend, type Answers, type Issue, type Who } from '../src/lib/report';
 import { SUMMARY, TOOLS } from '../src/lib/toolsText';
+import { FEATURES } from '../src/lib/featuresText';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'review', 'LexCourt-text-for-attorney-review.docx');
@@ -294,6 +295,9 @@ const SAMPLES: Record<string, unknown[]> = {
   signsSome: [2],
   stepOf: [2, 5],
   stateAgFor: ['Texas'],
+  reminderEventDescription: [null],
+  noVoice: ['[language name]'],
+  made: ['[date]'],
 };
 const SAMPLE_NOTE: Record<string, string> = {
   stepsTitle: 'Shows the name the user typed, or “this person”.',
@@ -301,6 +305,9 @@ const SAMPLE_NOTE: Record<string, string> = {
   signsSome: 'Shows how many warning signs were checked (example: 2).',
   stepOf: 'Example: step 2 of 5.',
   stateAgFor: 'Shows the state the user chose.',
+  reminderEventDescription: 'Written into the monthly calendar reminder. Shown without an A-Number (the default); if the person ticks “Include my A-Number”, the number replaces the last sentence’s request.',
+  noVoice: 'Shows the language’s own name, for example हिन्दी.',
+  made: 'Shows today’s date.',
 };
 
 function flatten(prefix: string, next: () => string, a: unknown, b: unknown, path: string, where: string, rows: Row[]) {
@@ -359,6 +366,21 @@ const partReport: Part = {
 
 const readMeta = (file: string) => readFileSync(join(root, file), 'utf8').match(/<meta name="description" content="([^"]+)"/)?.[1] ?? '';
 const readManifest = (file: string) => JSON.parse(readFileSync(join(root, 'public', file), 'utf8')).description as string;
+// Part 12: case status helper, read aloud, glossary, legal aid summary (draft 5)
+const fEn = FEATURES.en;
+const fEs = FEATURES.es;
+const partFeatures: Part = {
+  title: 'Case status, read aloud, glossary and legal aid summary (new, draft)',
+  intro:
+    'Four new features. Case status (#/status) explains how to check the court’s Automated Case Information online or by phone, with the A-Number filled in from the notice, and offers a monthly calendar reminder (the A-Number is left out unless the person ticks a box). Read aloud uses only voices on the device. Glossary terms are underlined in explanations; tapping one shows its meaning. The legal aid summary is a one-page page to print, download or share; nothing is sent automatically. All text is a draft that needs attorney review; the Hindi, Punjabi and Urdu columns also need native speaker review.',
+  rows: toolRows('F', [
+    ['Case status helper', 'Ayuda: estado del caso', fEn.status, fEs.status, 'features.status'],
+    ['Read aloud', 'Lectura en voz alta', fEn.listen, fEs.listen, 'features.listen'],
+    ['Glossary (underlined words and “Words to know”)', 'Glosario', fEn.glossary, fEs.glossary, 'features.glossary'],
+    ['Legal aid summary (one page to print, download or share)', 'Resumen para la ayuda legal', fEn.aid, fEs.aid, 'features.aid'],
+  ]),
+};
+
 const partOther: Part = {
   title: 'Other text (search engines and home-screen icon)',
   intro:
@@ -382,9 +404,9 @@ const FN_ARGS: Record<string, unknown[]> = {
 };
 
 function resolveKey(key: string, lang: Lang): string | undefined {
-  const m = key.match(/^(i18n|legal|tools|summary)\.(.+?)(\(.*\))?$/);
+  const m = key.match(/^(i18n|legal|tools|summary|features)\.(.+?)(\(.*\))?$/);
   if (!m) return undefined;
-  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang] };
+  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang], features: FEATURES[lang] };
   let v: unknown = roots[m[1]];
   for (const part of m[2].match(/[^.[\]]+/g) ?? []) v = (v as Record<string, unknown>)?.[part];
   if (typeof v === 'function') {
@@ -409,7 +431,7 @@ function fillNewLanguages(rows: Row[]) {
   }
 }
 
-const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partOther];
+const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partFeatures, partOther];
 for (const part of PARTS) fillNewLanguages(part.rows);
 for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS) r[l] = '— (no separate page in this language yet; the English description is used)';
 
@@ -417,9 +439,11 @@ for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS
 // Revision tracking: what changed in this draft, marked on each row
 // ---------------------------------------------------------------------------
 
-const REVISION = 'draft 4';
+const REVISION = 'draft 5';
 interface Change {
   n: number;
+  /** Shown instead of the row IDs in the “What changed” table. */
+  rowsLabel?: string;
   /** Which draft made the change (default: draft 2). */
   rev?: string;
   what: string;
@@ -441,6 +465,8 @@ const CHANGES: Change[] = [
   { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[6].paragraphs[0]'] },
   { n: 14, rev: 'draft 3', kind: 'NEW', what: 'Hindi, Punjabi and Urdu: every piece of text translated (new columns). Immigration terms are kept in English in brackets. DRAFT, needs native speaker review.', keys: [] },
   { n: 15, rev: 'draft 3', kind: 'NEW', what: 'Language menu (English, Español, हिन्दी, ਪੰਜਾਬੀ, اردو) replaces the language button; its label, the draft-translation notice, and a message when voice input does not support the language.', keys: ['i18n.langLabel', 'i18n.translationDraft', 'i18n.voiceLangUnsupported'] },
+  { n: 17, rev: 'draft 5', kind: 'NEW', what: 'Four new features in all five languages: case status helper (with optional monthly reminder), read aloud, glossary of 10 legal terms, and a one-page legal aid summary to print, download or share.', keys: partFeatures.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: 'Part 12, every row' },
+  { n: 18, rev: 'draft 5', kind: 'NEW', what: 'Privacy Policy, “Services you choose”: read aloud uses only voices on the device; the legal aid summary and monthly reminder are made on the device and never sent by LexCourt. (Privacy Policy date line: Draft 5. Terms unchanged, so users are not asked to accept again.)', keys: ['legal.privacy.sections[4].bullets[4]', 'legal.privacy.sections[4].bullets[5]'] },
   { n: 16, rev: 'draft 4', kind: 'NEW', what: 'Language: Terms section 16 and a Privacy Policy section say the English version controls if a translation differs; the same sentence in small print on the acceptance screen. In all five languages. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[15].heading', 'legal.terms.sections[15].paragraphs[0]', 'legal.privacy.sections[7].heading', 'legal.privacy.sections[7].paragraphs[0]', 'legal.acceptLanguageNote'] },
   { n: 13, kind: 'NEW', what: 'Spanish search description and home-screen description (served at /es/).', keys: ['index.html meta description (+ es/)', 'manifest.webmanifest description (+ es/)'] },
 ];
@@ -757,7 +783,7 @@ const intro: (Paragraph | Table)[] = [
     ['#', 'Draft', 'Change', 'Rows (new IDs)'],
     [...CHANGES]
       .sort((a, b) => a.n - b.n)
-      .map((c) => [String(c.n), c.rev ?? 'draft 2', `${c.kind}: ${c.what}`, c.keys.length ? c.keys.map((k) => idOfKey.get(k)).join(', ') : 'Hindi, Punjabi and Urdu columns, every row']),
+      .map((c) => [String(c.n), c.rev ?? 'draft 2', `${c.kind}: ${c.what}`, c.rowsLabel ?? (c.keys.length ? c.keys.map((k) => idOfKey.get(k)).join(', ') : 'Hindi, Punjabi and Urdu columns, every row')]),
     [600, 1200, 12632, 4000],
   ),
   new Paragraph({ spacing: { after: 120 }, children: [] }),
@@ -775,6 +801,7 @@ const intro: (Paragraph | Table)[] = [
   bullet('Privacy Policy accuracy against how the app works (described above), and any notices required by state privacy laws.'),
   bullet('Spanish: whether each Spanish text says the same thing as the English, with no change in legal meaning. A qualified legal translator should also review it.'),
   bullet('Language clause (new in draft 4): Terms section 16 and the Privacy Policy now say the English version controls if a translation differs. Is that appropriate for users who may not read English, and is accepting the Terms in a draft translation acceptable before the translations are reviewed?'),
+  bullet('New in draft 5 (Part 12): the case status steps (including the TDD number 1-800-828-1120 and adding a 0 to 8-digit A-Numbers), the plain-language meanings of the 10 glossary terms (removal, relief, asylum, in absentia, Notice to Appear, master calendar hearing, individual hearing, A-Number, accredited representative, appeal) — especially the asylum one-year deadline and the 30-day appeal deadline — and the legal aid summary wording.'),
   bullet('New “Check a representative” and “Report a problem” pages (Parts 9–10): accuracy of how to verify lawyers and accredited representatives, the notario warning signs, which offices handle which complaints (routing table), and the wording around filing complaints, including the note for people worried about how a complaint could affect them.'),
   bullet('The decisions listed below, which the draft leaves open.'),
 

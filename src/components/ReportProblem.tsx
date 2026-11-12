@@ -4,6 +4,7 @@ import { EMPTY_DETAILS, ISSUES, buildSummary, recommend, type Answers, type Auth
 import { OFFICIAL, US_STATES } from '../lib/resources';
 import { SUMMARY, TOOLS } from '../lib/toolsText';
 import { CopyButton, ExtLink, InfoNotAdvice, ToolDraftBanner } from './ToolParts';
+import { ListenButton } from './Reading';
 
 const STEPS = 5;
 const WHO: Who[] = ['lawyer', 'accredited', 'nonlawyer', 'unsure'];
@@ -241,13 +242,15 @@ function Results({
   const primary = recs.filter((r) => r.priority === 'primary');
   const also = recs.filter((r) => r.priority === 'also');
   const urgent = answers.issues.includes('missedDeadline') || answers.court !== 'no';
+  const resultsRef = useRef<HTMLElement>(null);
 
   return (
     <>
-      <section className="card" aria-labelledby="results-title">
+      <section className="card" aria-labelledby="results-title" ref={resultsRef}>
         <h2 id="results-title" tabIndex={-1} ref={headingRef}>
           {t.resultsTitle}
         </h2>
+        <ListenButton lang={lang} target={resultsRef} />
         {urgent && (
           <div className="alert">
             <p>

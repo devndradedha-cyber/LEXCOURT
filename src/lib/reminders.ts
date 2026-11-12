@@ -117,3 +117,59 @@ export function downloadIcs(input: ReminderInput, filename = 'immigration-court-
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+export interface MonthlyReminderInput {
+  title: string;
+  description: string;
+  /** Day the reminders are created; the first one is one month later. */
+  from: Date;
+  /** Number of monthly reminders (default 12). */
+  count?: number;
+  /** Used only to make a stable UID. */
+  now?: Date;
+}
+
+/** Day of month used for monthly reminders: at most 28, so no month is skipped. */
+export function monthlyDay(from: Date): number {
+  return Math.min(from.getDate(), 28);
+}
+
+/**
+ * A repeating calendar event to remind someone to check their case status.
+ * It only reminds; it contains no data unless the caller puts it in the
+ * description (the A-Number is opt-in).
+ */
+export function buildMonthlyIcs(input: MonthlyReminderInput): string {
+  const now = input.now ?? new Date();
+  const day = monthlyDay(input.from);
+  const first = new Date(input.from.getFullYear(), input.from.getMonth() + 1, day);
+  const p = (n: number) => String(n).padStart(2, '0');
+  const date = `${first.getFullYear()}${p(first.getMonth() + 1)}${p(first.getDate())}`;
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LexCourt//Case status reminder//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:status-${date}-${now.getTime().toString(36)}@lexcourt`,
+    `DTSTAMP:${stamp(now)}`,
+    `DTSTART:${date}T100000`,
+    `DTEND:${date}T101500`,
+    `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day};COUNT=${input.count ?? 12}`,
+    `SUMMARY:${escapeText(input.title)}`,
+    `DESCRIPTION:${escapeText(input.description)}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeText(input.title)}`, 'TRIGGER:PT0M', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ];
+  return lines.map(fold).join('\r\n') + '\r\n';
+}
+
+/** Save a file on the device (the user's choice; nothing is uploaded). */
+export function downloadFile(content: string, filename: string, mime: string): void {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

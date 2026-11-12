@@ -209,7 +209,7 @@ const en: LegalText = {
   },
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Draft 4 of November 12, 2026',
+    updated: 'Draft 5 of November 12, 2026',
     sections: [
       {
         heading: 'In short',
@@ -246,6 +246,8 @@ const en: LegalText = {
           '“Add to my calendar” creates a file on your device; LexCourt does not see it.',
           '“Add to Google Calendar” opens Google’s website with your hearing details filled in. Google’s privacy policy applies.',
           'Links to legal-aid and court websites take you to sites with their own privacy policies.',
+          'Read aloud: LexCourt only uses voices installed on your device, so the text is not sent anywhere. If your device has no voice for your language, read aloud is not available.',
+          'Legal aid summary and monthly reminder: these are made on your device. You choose whether to print, download or share them, and who to share them with. LexCourt never sends them.',
         ],
       },
       {
@@ -430,7 +432,7 @@ const es: LegalText = {
   },
   privacy: {
     title: 'Política de privacidad',
-    updated: 'Borrador 4 del 12 de noviembre de 2026',
+    updated: 'Borrador 5 del 12 de noviembre de 2026',
     sections: [
       {
         heading: 'En resumen',
@@ -467,6 +469,8 @@ const es: LegalText = {
           '“Agregar a mi calendario” crea un archivo en su dispositivo; LexCourt no lo ve.',
           '“Agregar a Google Calendar” abre el sitio de Google con los datos de su audiencia. Se aplica la política de privacidad de Google.',
           'Los enlaces a sitios de ayuda legal y de la corte le llevan a sitios con sus propias políticas de privacidad.',
+          'Lectura en voz alta: LexCourt solo usa las voces instaladas en su dispositivo, así que el texto no se envía a ningún lugar. Si su dispositivo no tiene una voz para su idioma, la lectura en voz alta no está disponible.',
+          'Resumen para la ayuda legal y recordatorio mensual: se hacen en su dispositivo. Usted decide si los imprime, descarga o comparte, y con quién. LexCourt nunca los envía.',
         ],
       },
       {
