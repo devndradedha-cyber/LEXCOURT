@@ -56,6 +56,25 @@ The app is in **English, Spanish, Hindi (Devanagari), Punjabi (Gurmukhi) and Urd
   - **Share**: the share sheet, with text.
   - Nothing is sent automatically. The summary can be made in English, Spanish or the person's language.
 
+## Feedback (draft)
+
+After the Notice Reader explanation and the Check a representative page, a small card asks **“How helpful was this?”**: 1–5 stars and an optional comment, in all five languages. The rules:
+
+1. **LexCourt only.** People rate LexCourt, never a lawyer or firm; the card says so.
+2. **Private by default.** Comments are stored for reviewers only. A comment can be published only if the person ticks the consent box **and** a reviewer approves it. Approved comments are kept but **not shown anywhere yet**.
+3. **Names removed.** Before anything can be approved, `src/lib/feedback/moderation.ts` removes names of lawyers, law firms and people (title + name, role + name, firm patterns, capitalised names; Hindi/Punjabi/Urdu honorific patterns) and flags the item. Detection is heuristic, so the reviewer always sees the original and edits the public text; the server re-checks the edited text on approval.
+4. **No accusations.** If a comment mentions fraud or a scam (in any supported language), the card points to **Report a problem**, the consent box is disabled, and the server never queues it for publishing.
+5. **No sensitive details.** The form asks for nothing but stars and a comment, warns people not to include personal details, and won’t send a comment containing an A-Number, case number, SSN, phone, email or immigration-status words. The server removes any that get through. No name, IP address or user agent is stored.
+6. **Admin dashboard** at `#/admin` (English only): average rating, ratings per feature, the moderation queue, private comments and approved items.
+
+**Setup (Supabase + Vercel):**
+
+1. Create a Supabase project and run `supabase/schema.sql` in its SQL editor. Row Level Security is on with no policies, so only the service-role key can read or write.
+2. In Vercel → Project → Settings → Environment Variables, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (server-side only — never put it in a `VITE_` variable) and `ADMIN_PASSWORD` (at least 12 characters). Redeploy.
+3. Without these, the card says feedback isn’t available and the admin page explains what is missing.
+
+The serverless functions are in `api/` and call `server/feedbackApi.ts`. In `npm run dev` and `npm run preview`, the same handlers run in memory (nothing saved) and the admin password is `local-dev-password` unless `ADMIN_PASSWORD` is set.
+
 ## Hindi, Punjabi and Urdu (draft translations)
 
 > ⚠️ **DRAFT, needs native speaker review.** Every Hindi, Punjabi and Urdu screen shows a notice saying the translation is a draft.
@@ -82,7 +101,8 @@ The app is in **English, Spanish, Hindi (Devanagari), Punjabi (Gurmukhi) and Urd
 
 ## Privacy
 
-- **No backend, no accounts, no analytics, no cookies.** Nothing the user enters is stored or sent to a server, and closing the page removes it. The only thing saved is the accepted terms version, in `localStorage`.
+- **No accounts, no analytics, no cookies.** Nothing the user enters is stored or sent to a server, and closing the page removes it. The only thing saved on the device is the accepted terms version, in `localStorage`.
+- **The one exception is feedback the person chooses to send** (stars, optional comment, feature, language, date), stored in Supabase through LexCourt’s own `/api` (see Feedback above). Personal details are blocked in the app and removed again on the server.
 - Photos and PDFs are processed in the browser using `pdf.js` and `tesseract.js` OCR. The file is never uploaded.
 - **No CDN.** The OCR engine (worker + WebAssembly core) and the English and Spanish models (~5 MB, downloaded once when someone first reads a photo) are served by LexCourt itself from `/tesseract/`. `scripts/copy-ocr-assets.mjs` copies them from `node_modules` before every `dev` and `build`. The browser caches the models (not any user data) in IndexedDB so later reads are faster.
 - The production build sets a **Content-Security-Policy** that only allows scripts and data requests to LexCourt's own origin, so the browser itself blocks anything from being sent elsewhere. Links the user taps still open normally.
@@ -128,7 +148,7 @@ Every push then deploys automatically. Other branches get their own preview URLs
 ## Before launch
 
 - [ ] Open every link in `src/lib/resources.ts` in a browser. On 2026-11-10 they were checked against search-engine indexes of the official sites, but the sites themselves couldn't be opened from the build environment. Confirm the Spanish (`/es/`) versions especially.
-- [ ] Fill in `[OPERATOR NAME]` and `[CONTACT EMAIL]` in the Terms (section 15) and the Privacy Policy (`src/lib/legal.ts`).
+- [ ] Fill in `[OPERATOR NAME]` and `[CONTACT EMAIL]` in the Terms (section 15) and the Privacy Policy, including the feedback deletion contact, (`src/lib/legal.ts`).
 - [ ] Confirm whether the online EOIR-33/IC form needs an account. The claim was removed because it couldn't be checked.
 - [ ] **Have a licensed attorney review and approve the Disclaimer, Terms of Use and Privacy Policy in `src/lib/legal.ts`** and resolve every `[ATTORNEY REVIEW]` note: governing law, operating entity, contact address, warranty and liability wording, and state privacy notices. Then set `IS_DRAFT = false` and give `TERMS_VERSION` a new, non-draft value.
 - [ ] Have an attorney review the **Check a representative** and **Report a problem** text and the routing rules (Parts 9–10 of the review document). Then set `TOOLS_DRAFT = false` in `src/lib/toolsText.ts`.
@@ -138,4 +158,6 @@ Every push then deploys automatically. Other branches get their own preview URLs
 - [ ] Decide with the attorney whether the Terms should say which language version controls.
 - [ ] Have an immigration attorney or DOJ-accredited representative review all text in `src/lib/i18n.ts`.
 - [ ] Have a native Spanish speaker review the Spanish text, ideally with people who will use the app.
+- [ ] Have the attorney review the feedback rules, Terms section 17 and the Privacy Policy feedback section (review document, Feedback part), including how long feedback is kept.
+- [ ] Add rate limiting for `/api/feedback` (for example Vercel Firewall rules); today only a hidden honeypot field filters bots.
 - [ ] Test OCR on real (redacted) notices and phone photos, and tune `extract.ts`.

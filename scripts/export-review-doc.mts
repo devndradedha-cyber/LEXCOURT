@@ -38,6 +38,7 @@ import { LINKS, OFFICIAL, STATE_LAWYER_LOOKUPS } from '../src/lib/resources';
 import { recommend, type Answers, type Issue, type Who } from '../src/lib/report';
 import { SUMMARY, TOOLS } from '../src/lib/toolsText';
 import { FEATURES } from '../src/lib/featuresText';
+import { FEEDBACK } from '../src/lib/feedbackText';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'review', 'LexCourt-text-for-attorney-review.docx');
@@ -347,7 +348,7 @@ const tEs = TOOLS.es;
 const partCheck: Part = {
   title: 'Check a representative (new, draft)',
   intro:
-    'New page (#/check). The user can type the name of their lawyer or representative and say what they claim to be. LexCourt does not search for them: it explains how to check, links to the official lists, and shows a checklist of notario-fraud warning signs. Nothing is stored or sent. All text is a draft that needs attorney review.',
+    'New page (#/check). The user can type the name of their lawyer or representative and say what they claim to be. LexCourt does not search for them: it explains how to check, links to the official lists, and shows a checklist of notario-fraud warning signs. Nothing the user types on this page is stored or sent (the optional feedback prompt at the end is described in the Feedback part). All text is a draft that needs attorney review.',
   rows: toolRows('C', [
     ['Tabs (top of the Notice Reader, Check and Report pages)', 'Pestañas', tEn.nav, tEs.nav, 'tools.nav'],
     ['Shared notices on both new pages', 'Avisos comunes', { draftBadge: tEn.draftBadge, draftNotice: tEn.draftNotice, infoNotAdvice: tEn.infoNotAdvice, copy: tEn.copy, copied: tEn.copied, copyFailed: tEn.copyFailed, openNewTab: tEn.openNewTab }, { draftBadge: tEs.draftBadge, draftNotice: tEs.draftNotice, infoNotAdvice: tEs.infoNotAdvice, copy: tEs.copy, copied: tEs.copied, copyFailed: tEs.copyFailed, openNewTab: tEs.openNewTab }, 'tools'],
@@ -366,7 +367,7 @@ const partReport: Part = {
 
 const readMeta = (file: string) => readFileSync(join(root, file), 'utf8').match(/<meta name="description" content="([^"]+)"/)?.[1] ?? '';
 const readManifest = (file: string) => JSON.parse(readFileSync(join(root, 'public', file), 'utf8')).description as string;
-// Part 12: case status helper, read aloud, glossary, legal aid summary (draft 5)
+// Case status helper, read aloud, glossary, legal aid summary (draft 5)
 const fEn = FEATURES.en;
 const fEs = FEATURES.es;
 const partFeatures: Part = {
@@ -379,6 +380,14 @@ const partFeatures: Part = {
     ['Glossary (underlined words and “Words to know”)', 'Glosario', fEn.glossary, fEs.glossary, 'features.glossary'],
     ['Legal aid summary (one page to print, download or share)', 'Resumen para la ayuda legal', fEn.aid, fEs.aid, 'features.aid'],
   ]),
+};
+
+// Feedback prompt (draft 6)
+const partFeedback: Part = {
+  title: 'Feedback: “How helpful was this?” (new, draft)',
+  intro:
+    'Shown after the Notice Reader explanation and after the Check a representative page. People rate LexCourt only (1–5 stars), never a lawyer or firm, and can add an optional comment. Rules built into the app and the server: (1) comments are private and visible only to LexCourt’s reviewers on a password-protected admin page (English only, not translated); (2) a comment can be published only if the person ticks the consent box AND a reviewer approves it — approved comments are kept but not shown anywhere yet; (3) before anything can be approved, names of lawyers, law firms and other people are removed automatically and the item is flagged for review (the reviewer re-checks the final text); (4) comments that mention fraud or a scam can never be published, and the person is pointed to Report a problem instead; (5) the app blocks sending a comment that contains an A-Number, case number, Social Security number, phone number, email address or immigration status words, and the server removes any that get through. No name, contact details, IP address or device details are stored. Data is stored with Supabase. All text is a draft that needs attorney review; the Hindi, Punjabi and Urdu columns also need native speaker review.',
+  rows: toolRows('FB', [['Feedback prompt', 'Comentarios', FEEDBACK.en, FEEDBACK.es, 'feedback']]),
 };
 
 const partOther: Part = {
@@ -404,9 +413,9 @@ const FN_ARGS: Record<string, unknown[]> = {
 };
 
 function resolveKey(key: string, lang: Lang): string | undefined {
-  const m = key.match(/^(i18n|legal|tools|summary|features)\.(.+?)(\(.*\))?$/);
+  const m = key.match(/^(i18n|legal|tools|summary|features|feedback)\.(.+?)(\(.*\))?$/);
   if (!m) return undefined;
-  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang], features: FEATURES[lang] };
+  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang], features: FEATURES[lang], feedback: FEEDBACK[lang] };
   let v: unknown = roots[m[1]];
   for (const part of m[2].match(/[^.[\]]+/g) ?? []) v = (v as Record<string, unknown>)?.[part];
   if (typeof v === 'function') {
@@ -431,7 +440,8 @@ function fillNewLanguages(rows: Row[]) {
   }
 }
 
-const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partFeatures, partOther];
+const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partFeatures, partFeedback, partOther];
+const partNo = (p: Part) => PARTS.indexOf(p) + 1;
 for (const part of PARTS) fillNewLanguages(part.rows);
 for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS) r[l] = '— (no separate page in this language yet; the English description is used)';
 
@@ -439,7 +449,7 @@ for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS
 // Revision tracking: what changed in this draft, marked on each row
 // ---------------------------------------------------------------------------
 
-const REVISION = 'draft 5';
+const REVISION = 'draft 6';
 interface Change {
   n: number;
   /** Shown instead of the row IDs in the “What changed” table. */
@@ -462,12 +472,15 @@ const CHANGES: Change[] = [
   { n: 9, kind: 'NEW', what: 'Terms: Severability and Entire agreement sections.', keys: ['legal.terms.sections[12].heading', 'legal.terms.sections[12].paragraphs[0]', 'legal.terms.sections[13].heading', 'legal.terms.sections[13].paragraphs[0]'] },
   { n: 10, kind: 'CHANGED', what: 'No warranty and Limitation of liability: reviewer note on Pennsylvania law (wording unchanged).', keys: ['legal.terms.sections[9].paragraphs[0]', 'legal.terms.sections[10].paragraphs[0]'] },
   { n: 11, kind: 'CHANGED', what: 'Terms: governed by Pennsylvania law; operator name and contact email placeholders.', keys: ['legal.terms.sections[14].paragraphs[0]'] },
-  { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[6].paragraphs[0]'] },
+  { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[7].paragraphs[0]'] },
   { n: 14, rev: 'draft 3', kind: 'NEW', what: 'Hindi, Punjabi and Urdu: every piece of text translated (new columns). Immigration terms are kept in English in brackets. DRAFT, needs native speaker review.', keys: [] },
   { n: 15, rev: 'draft 3', kind: 'NEW', what: 'Language menu (English, Español, हिन्दी, ਪੰਜਾਬੀ, اردو) replaces the language button; its label, the draft-translation notice, and a message when voice input does not support the language.', keys: ['i18n.langLabel', 'i18n.translationDraft', 'i18n.voiceLangUnsupported'] },
-  { n: 17, rev: 'draft 5', kind: 'NEW', what: 'Four new features in all five languages: case status helper (with optional monthly reminder), read aloud, glossary of 10 legal terms, and a one-page legal aid summary to print, download or share.', keys: partFeatures.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: 'Part 12, every row' },
+  { n: 17, rev: 'draft 5', kind: 'NEW', what: 'Four new features in all five languages: case status helper (with optional monthly reminder), read aloud, glossary of 10 legal terms, and a one-page legal aid summary to print, download or share.', keys: partFeatures.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: `Part ${partNo(partFeatures)}, every row` },
   { n: 18, rev: 'draft 5', kind: 'NEW', what: 'Privacy Policy, “Services you choose”: read aloud uses only voices on the device; the legal aid summary and monthly reminder are made on the device and never sent by LexCourt. (Privacy Policy date line: Draft 5. Terms unchanged, so users are not asked to accept again.)', keys: ['legal.privacy.sections[4].bullets[4]', 'legal.privacy.sections[4].bullets[5]'] },
-  { n: 16, rev: 'draft 4', kind: 'NEW', what: 'Language: Terms section 16 and a Privacy Policy section say the English version controls if a translation differs; the same sentence in small print on the acceptance screen. In all five languages. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[15].heading', 'legal.terms.sections[15].paragraphs[0]', 'legal.privacy.sections[7].heading', 'legal.privacy.sections[7].paragraphs[0]', 'legal.acceptLanguageNote'] },
+  { n: 16, rev: 'draft 4', kind: 'NEW', what: 'Language: Terms section 16 and a Privacy Policy section say the English version controls if a translation differs; the same sentence in small print on the acceptance screen. In all five languages. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[15].heading', 'legal.terms.sections[15].paragraphs[0]', 'legal.privacy.sections[8].heading', 'legal.privacy.sections[8].paragraphs[0]', 'legal.acceptLanguageNote'] },
+  { n: 19, rev: 'draft 6', kind: 'NEW', what: 'Feedback prompt (“How helpful was this?”) in all five languages: 1–5 stars for LexCourt only, optional private comment, warning not to include personal details, consent box for sharing, and a prompt to use Report a problem when a comment mentions fraud or a scam. Plus an English-only admin page with ratings and a moderation queue.', keys: partFeedback.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: `Part ${partNo(partFeedback)}, every row` },
+  { n: 20, rev: 'draft 6', kind: 'NEW', what: 'Privacy Policy: new section “Feedback you choose to send” (what is stored, who can read it, Supabase, publishing only with consent and approval, how to ask for deletion); “In short” now says LexCourt keeps feedback if the person sends it; the privacy box on the start screen says the same. Date lines: Draft 6.', keys: ['legal.privacy.sections[0].bullets[2]', 'legal.privacy.sections[5].heading', 'legal.privacy.sections[5].paragraphs[0]', 'legal.privacy.sections[5].paragraphs[1]', 'legal.privacy.sections[5].paragraphs[2]', 'legal.privacy.sections[5].paragraphs[3]', 'i18n.privacy[3]', 'legal.privacy.updated', 'legal.terms.updated'] },
+  { n: 21, rev: 'draft 6', kind: 'NEW', what: 'Terms section 17, “Feedback”: ratings are about LexCourt only; permission to publish a shared comment after names are removed; no fraud or misconduct accusations in feedback. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[16].heading', 'legal.terms.sections[16].paragraphs[0]'] },
   { n: 13, kind: 'NEW', what: 'Spanish search description and home-screen description (served at /es/).', keys: ['index.html meta description (+ es/)', 'manifest.webmanifest description (+ es/)'] },
 ];
 /** Reviewer notes added in this draft. `decision` ones are also listed under “Decisions needed”. */
@@ -476,6 +489,10 @@ const NOTES: Record<string, { note: string; decision?: boolean }> = {
   'legal.terms.sections[9].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
   'legal.terms.sections[10].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
   'legal.terms.sections[14].paragraphs[0]': { note: 'No venue / forum clause yet: add one if wanted.', decision: true },
+  'legal.terms.sections[16].paragraphs[0]': {
+    note: 'Confirm this permission to publish (a licence for user comments) is enough, and whether a separate consent text or age check is needed before publishing any comment.',
+    decision: true,
+  },
   'legal.terms.sections[15].paragraphs[0]': {
     note: 'Confirm an “English version controls” clause is appropriate and enforceable for users who may not read English (the app’s audience), and whether translations should be described as unofficial instead.',
     decision: true,
@@ -774,7 +791,7 @@ const intro: (Paragraph | Table)[] = [
     'LexCourt is a free, mobile-first web app for people in U.S. immigration court who do not have a lawyer. Its first feature, the Notice Reader, lets a person take a photo of their court notice, choose a PDF, or describe the notice by voice or text. The app then shows the hearing date, time and court address it found, explains the notice in plain language, offers calendar reminders, and links to free legal help. It is available in English and Spanish.',
   ),
   body(
-    'Everything runs on the user’s own phone or computer. The notice is never uploaded, and the app has no accounts, analytics or cookies. The only thing it stores is a note on the device that the user accepted the terms. The details the app extracts are automatic guesses; users can correct them, and the app tells them to check every detail against the notice and the court.',
+    'Everything runs on the user’s own phone or computer. The notice is never uploaded, and the app has no accounts, analytics or cookies. It stores a note on the device that the user accepted the terms. Since draft 6 it also stores feedback a person chooses to send (a star rating and an optional comment about LexCourt) in a database, for LexCourt’s reviewers only; see the Feedback part. The details the app extracts are automatic guesses; users can correct them, and the app tells them to check every detail against the notice and the court.',
   ),
 
   h2(`What changed since the first review copy (now ${REVISION})`),
@@ -801,7 +818,8 @@ const intro: (Paragraph | Table)[] = [
   bullet('Privacy Policy accuracy against how the app works (described above), and any notices required by state privacy laws.'),
   bullet('Spanish: whether each Spanish text says the same thing as the English, with no change in legal meaning. A qualified legal translator should also review it.'),
   bullet('Language clause (new in draft 4): Terms section 16 and the Privacy Policy now say the English version controls if a translation differs. Is that appropriate for users who may not read English, and is accepting the Terms in a draft translation acceptable before the translations are reviewed?'),
-  bullet('New in draft 5 (Part 12): the case status steps (including the TDD number 1-800-828-1120 and adding a 0 to 8-digit A-Numbers), the plain-language meanings of the 10 glossary terms (removal, relief, asylum, in absentia, Notice to Appear, master calendar hearing, individual hearing, A-Number, accredited representative, appeal) — especially the asylum one-year deadline and the 30-day appeal deadline — and the legal aid summary wording.'),
+  bullet(`New in draft 5 (Part ${partNo(partFeatures)}): the case status steps (including the TDD number 1-800-828-1120 and adding a 0 to 8-digit A-Numbers), the plain-language meanings of the 10 glossary terms (removal, relief, asylum, in absentia, Notice to Appear, master calendar hearing, individual hearing, A-Number, accredited representative, appeal) — especially the asylum one-year deadline and the 30-day appeal deadline — and the legal aid summary wording.`),
+  bullet(`New in draft 6 (Part ${partNo(partFeedback)}, Terms section 17, Privacy Policy “Feedback you choose to send”): the feedback prompt and its rules — private by default; published only with consent and reviewer approval, after names are removed; no fraud or scam accusations (sent to Report a problem instead); no A-Numbers, case numbers or immigration status collected. Is the consent wording enough to publish a comment, is anything else required for storing feedback (retention, deletion, state privacy laws), and does a public review of LexCourt raise any concern?`),
   bullet('New “Check a representative” and “Report a problem” pages (Parts 9–10): accuracy of how to verify lawyers and accredited representatives, the notario warning signs, which offices handle which complaints (routing table), and the wording around filing complaints, including the note for people worried about how a complaint could affect them.'),
   bullet('The decisions listed below, which the draft leaves open.'),
 

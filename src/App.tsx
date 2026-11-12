@@ -12,20 +12,22 @@ import { ReportProblem } from './components/ReportProblem';
 import { CaseStatus } from './components/CaseStatus';
 import { AidSummary } from './components/AidSummary';
 import { GlossaryText, ListenButton, WordsToKnow } from './components/Reading';
+import { FeedbackPrompt } from './components/Feedback';
+import { AdminDashboard } from './components/AdminDashboard';
 import { FEATURES } from './lib/featuresText';
 
 type Phase = { kind: 'start' } | { kind: 'working'; label: string; fraction: number } | { kind: 'result' };
 
 type LegalRoute = 'disclaimer' | 'terms' | 'privacy';
 type ToolRoute = 'home' | 'status' | 'check' | 'report';
-type Route = ToolRoute | LegalRoute;
+type Route = ToolRoute | LegalRoute | 'admin';
 const LEGAL_ROUTES: Route[] = ['disclaimer', 'terms', 'privacy'];
 const TOOL_ROUTES: Route[] = ['status', 'check', 'report'];
 const isLegal = (r: Route): r is LegalRoute => LEGAL_ROUTES.includes(r);
 
 function readRoute(): Route {
   const r = window.location.hash.replace(/^#\/?/, '') as Route;
-  return LEGAL_ROUTES.includes(r) || TOOL_ROUTES.includes(r) ? r : 'home';
+  return LEGAL_ROUTES.includes(r) || TOOL_ROUTES.includes(r) || r === 'admin' ? r : 'home';
 }
 
 /** Simple hash routing (#/terms, #/privacy, #/disclaimer) so pages work on any static host. */
@@ -136,12 +138,14 @@ export default function App() {
         </p>
       )}
 
-      {!isLegal(route) && <ToolNav lang={lang} route={route} />}
+      {!isLegal(route) && route !== 'admin' && <ToolNav lang={lang} route={route} />}
 
       <main>
         {isLegal(route) && <LegalPage lang={lang} doc={legal[route]} />}
 
-        {!isLegal(route) && !accepted && (
+        {route === 'admin' && <AdminDashboard />}
+
+        {!isLegal(route) && route !== 'admin' && !accepted && (
           <AcceptTerms
             lang={lang}
             onAccept={() => {
@@ -178,7 +182,7 @@ export default function App() {
 
         {route === 'report' && accepted && <ReportProblem lang={lang} />}
 
-        {!isLegal(route) && <LegalHelp lang={lang} />}
+        {!isLegal(route) && route !== 'admin' && <LegalHelp lang={lang} />}
 
         {route === 'home' && (
           <section className="card subtle" aria-labelledby="privacy-title">
@@ -582,6 +586,8 @@ function Result({
       <AidSummary lang={lang} facts={facts} />
 
       <WordsToKnow lang={lang} />
+
+      <FeedbackPrompt lang={lang} feature="notice_reader" />
 
       <details className="card subtle">
         <summary>{t.showText}</summary>

@@ -215,3 +215,35 @@ input[type='date'], input[type='time'], input[inputmode='numeric'] { direction: 
   main, :has(> .print-area) { display: block !important; padding: 0 !important; margin: 0 !important; border: 0 !important; max-width: none !important; background: #fff !important; }
   .print-area { border: 0; margin: 0; padding: 0; }
 }
+
+/* Feedback prompt */
+.feedback h2 { font-size: 20px; }
+.stars { display: flex; gap: 4px; margin: 6px 0 0; direction: ltr; }
+.star { font-size: 34px; line-height: 1; width: 52px; height: 52px; border: 2px solid var(--border); border-radius: 12px; background: var(--card); color: var(--border); cursor: pointer; padding: 0; }
+.star.on { color: #e3a008; border-color: #e3a008; background: var(--warn-bg); }
+.star:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.feedback-comment { display: flex; flex-direction: column; gap: 6px; font-weight: 600; margin-top: 10px; }
+.feedback-comment textarea { font-weight: 400; }
+.warn.small { font-size: 15px; }
+.error-box { border: 2px solid var(--error); border-radius: 10px; padding: 8px 12px; margin: 10px 0; color: var(--error); }
+.error-box p, .error-box ul { margin: 4px 0; }
+.feedback-thanks { font-weight: 600; font-size: 18px; margin: 0; }
+/* Spam trap: invisible to people and screen readers. */
+.hp { position: absolute !important; inset-inline-start: 0; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); opacity: 0; pointer-events: none; white-space: nowrap; }
+
+/* Admin dashboard */
+.admin-head { align-items: center; justify-content: space-between; }
+.admin-head h1 { margin: 0; flex: 1 1 100%; }
+.admin-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+.stat { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.stat.wide { grid-column: 1 / -1; }
+.stat-num { font-size: 28px; font-weight: 700; color: var(--brand); }
+.stat-label { font-size: 15px; }
+.bar-row { display: grid; grid-template-columns: 32px 1fr 36px; gap: 6px; align-items: center; font-size: 14px; }
+.bar { display: block; height: 10px; background: var(--brand); border-radius: 5px; min-width: 2px; }
+.admin-item { border-top: 1px solid var(--border); padding: 12px 0; }
+.admin-item blockquote { margin: 4px 0 10px; padding: 8px 12px; background: var(--bg); border-inline-start: 4px solid var(--border); border-radius: 6px; }
+.admin-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stars-text { color: #e3a008; letter-spacing: 1px; }
+.flag { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--info-bg); color: var(--brand); }
+.flag.scam_mentioned { background: var(--warn-bg); color: var(--error); }

@@ -15,7 +15,7 @@ import { hiLegal } from './locales/hi';
 import { paLegal } from './locales/pa';
 import { urLegal } from './locales/ur';
 
-export const TERMS_VERSION = '2026-11-12-draft-4';
+export const TERMS_VERSION = '2026-11-12-draft-6';
 export const IS_DRAFT = true;
 
 export interface Section {
@@ -111,7 +111,7 @@ const en: LegalText = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: 'Draft 4 of November 12, 2026',
+    updated: 'Draft 6 of November 12, 2026',
     sections: [
       {
         heading: '1. Agreement',
@@ -205,18 +205,24 @@ const en: LegalText = {
           'These Terms are written in English and translated for convenience. If a translation differs from the English version, the English version controls.',
         ],
       },
+      {
+        heading: '17. Feedback',
+        paragraphs: [
+          'You can rate LexCourt and leave a comment. Ratings are about LexCourt only, not about any lawyer, representative or other person. If you allow your comment to be shared, you give LexCourt permission to publish it after removing names and personal details; LexCourt may edit it for that purpose or choose not to publish it. Do not use feedback to accuse anyone of fraud or misconduct; use Report a problem to reach the offices that handle complaints.',
+        ],
+      },
     ],
   },
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Draft 5 of November 12, 2026',
+    updated: 'Draft 6 of November 12, 2026',
     sections: [
       {
         heading: 'In short',
         bullets: [
           'Your notice is read on your own phone or computer. LexCourt does not upload it, does not store it, and never receives it.',
           'No accounts, no names, no cookies, no analytics, no advertising, no tracking.',
-          'The only thing LexCourt saves is a note on your device that you accepted the terms.',
+          'LexCourt keeps only two things: a note on your device that you accepted the terms and — only if you choose to send it — your feedback about LexCourt (a star rating and an optional comment).',
         ],
       },
       {
@@ -248,6 +254,15 @@ const en: LegalText = {
           'Links to legal-aid and court websites take you to sites with their own privacy policies.',
           'Read aloud: LexCourt only uses voices installed on your device, so the text is not sent anywhere. If your device has no voice for your language, read aloud is not available.',
           'Legal aid summary and monthly reminder: these are made on your device. You choose whether to print, download or share them, and who to share them with. LexCourt never sends them.',
+        ],
+      },
+      {
+        heading: 'Feedback you choose to send',
+        paragraphs: [
+          'If you rate LexCourt, we store your star rating, which feature you rated, the language you used, the date, and your comment if you write one. We do not ask for your name or contact details, and we do not store your IP address or device details with your feedback.',
+          'Do not include your name, A-Number, case numbers, immigration status or other personal details in a comment. LexCourt removes these automatically when it finds them.',
+          'Feedback is stored with our database provider (currently Supabase), and only LexCourt’s reviewers can read it. Comments are private. A comment can be shared publicly only if you tick the box allowing it and a reviewer approves it; names of people and law firms are removed first. Comments about fraud or scams are never shared — use Report a problem instead.',
+          'To ask us to delete your feedback, contact [CONTACT EMAIL] and tell us roughly when you sent it and what it said. [ATTORNEY REVIEW: how long feedback is kept, how deletion requests are handled, and any notices required for storing it.]',
         ],
       },
       {
@@ -334,7 +349,7 @@ const es: LegalText = {
   },
   terms: {
     title: 'Términos de uso',
-    updated: 'Borrador 4 del 12 de noviembre de 2026',
+    updated: 'Borrador 6 del 12 de noviembre de 2026',
     sections: [
       {
         heading: '1. Acuerdo',
@@ -428,18 +443,24 @@ const es: LegalText = {
           'Estos Términos están escritos en inglés y se traducen para su comodidad. Si una traducción es diferente de la versión en inglés, prevalece la versión en inglés.',
         ],
       },
+      {
+        heading: '17. Comentarios',
+        paragraphs: [
+          'Usted puede calificar LexCourt y dejar un comentario. Las calificaciones son solo sobre LexCourt, no sobre ningún abogado, representante u otra persona. Si permite que su comentario se comparta, le da permiso a LexCourt para publicarlo después de quitar nombres y datos personales; LexCourt puede editarlo con ese fin o decidir no publicarlo. No use los comentarios para acusar a nadie de fraude o mala conducta; use Reportar un problema para llegar a las oficinas que atienden quejas.',
+        ],
+      },
     ],
   },
   privacy: {
     title: 'Política de privacidad',
-    updated: 'Borrador 5 del 12 de noviembre de 2026',
+    updated: 'Borrador 6 del 12 de noviembre de 2026',
     sections: [
       {
         heading: 'En resumen',
         bullets: [
           'Su aviso se lee en su propio teléfono o computadora. LexCourt no lo sube a internet, no lo guarda y nunca lo recibe.',
           'No hay cuentas, nombres, cookies, analítica, publicidad ni rastreo.',
-          'Lo único que LexCourt guarda es una nota en su dispositivo de que usted aceptó los términos.',
+          'LexCourt guarda solo dos cosas: una nota en su dispositivo de que usted aceptó los términos y — solo si usted decide enviarlos — sus comentarios sobre LexCourt (una calificación con estrellas y un comentario opcional).',
         ],
       },
       {
@@ -471,6 +492,15 @@ const es: LegalText = {
           'Los enlaces a sitios de ayuda legal y de la corte le llevan a sitios con sus propias políticas de privacidad.',
           'Lectura en voz alta: LexCourt solo usa las voces instaladas en su dispositivo, así que el texto no se envía a ningún lugar. Si su dispositivo no tiene una voz para su idioma, la lectura en voz alta no está disponible.',
           'Resumen para la ayuda legal y recordatorio mensual: se hacen en su dispositivo. Usted decide si los imprime, descarga o comparte, y con quién. LexCourt nunca los envía.',
+        ],
+      },
+      {
+        heading: 'Comentarios que usted decide enviar',
+        paragraphs: [
+          'Si califica LexCourt, guardamos su calificación con estrellas, qué función calificó, el idioma que usó, la fecha y su comentario si escribe uno. No pedimos su nombre ni sus datos de contacto, y no guardamos su dirección IP ni datos de su dispositivo con sus comentarios.',
+          'No incluya su nombre, Número A, números de caso, estatus migratorio ni otros datos personales en un comentario. LexCourt los quita automáticamente cuando los encuentra.',
+          'Los comentarios se guardan con nuestro proveedor de base de datos (actualmente Supabase) y solo los revisores de LexCourt pueden leerlos. Los comentarios son privados. Un comentario solo se puede compartir públicamente si usted marca la casilla que lo permite y un revisor lo aprueba; primero se quitan los nombres de personas y bufetes. Los comentarios sobre fraude o estafas nunca se comparten — use Reportar un problema.',
+          'Para pedirnos que borremos sus comentarios, escriba a [CONTACT EMAIL] y díganos más o menos cuándo los envió y qué decían. [REVISIÓN DE ABOGADO: cuánto tiempo se guardan los comentarios, cómo se atienden las solicitudes de borrado y avisos requeridos por guardarlos.]',
         ],
       },
       {

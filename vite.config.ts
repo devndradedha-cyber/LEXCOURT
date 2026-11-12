@@ -1,5 +1,8 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { handleModerate, handleQueue, handleStats, handleSubmit, type Deps } from './server/feedbackApi.js';
+import { MemoryStore } from './server/store.js';
 
 /**
  * Content-Security-Policy for the production build. It makes the browser refuse
@@ -31,8 +34,49 @@ function cspPlugin(): Plugin {
   };
 }
 
+/**
+ * Local development only: serve /api/* with an in-memory feedback store, so the
+ * feedback prompt and admin dashboard can be tried without Supabase. Never part
+ * of the production build (Vercel runs the functions in /api instead).
+ * Admin password: ADMIN_PASSWORD, or "local-dev-password" by default.
+ */
+function devApiPlugin(): Plugin {
+  const deps: Deps = { store: new MemoryStore(), adminPassword: process.env.ADMIN_PASSWORD ?? 'local-dev-password', authDelayMs: 200 };
+  const routes: Record<string, (r: Request, d: Deps) => Promise<Response>> = {
+    '/api/feedback': handleSubmit,
+    '/api/admin/stats': handleStats,
+    '/api/admin/queue': handleQueue,
+    '/api/admin/moderate': handleModerate,
+  };
+  const middleware = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+    const path = (req.url ?? '').split('?')[0];
+    const handler = routes[path];
+    if (!handler) return next();
+    const chunks: Buffer[] = [];
+    for await (const c of req) chunks.push(c as Buffer);
+    const request = new Request(`http://localhost${req.url}`, {
+      method: req.method,
+      headers: req.headers as Record<string, string>,
+      body: ['GET', 'HEAD'].includes(req.method ?? 'GET') ? undefined : Buffer.concat(chunks),
+    });
+    const response = await handler(request, deps);
+    res.statusCode = response.status;
+    response.headers.forEach((v, k) => res.setHeader(k, v));
+    res.end(Buffer.from(await response.arrayBuffer()));
+  };
+  return {
+    name: 'lexcourt-dev-api',
+    configureServer(server) {
+      server.middlewares.use(middleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), cspPlugin()],
+  plugins: [react(), cspPlugin(), devApiPlugin()],
   build: {
     rollupOptions: {
       // Two entry pages with the same app: / (English) and /es/ (Spanish), so

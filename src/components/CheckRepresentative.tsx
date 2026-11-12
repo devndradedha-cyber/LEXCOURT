@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { GlossaryText, ListenButton } from './Reading';
+import { FeedbackPrompt } from './Feedback';
 import type { Lang } from '../lib/i18n';
 import { OFFICIAL, STATE_LAWYER_LOOKUPS, US_STATES } from '../lib/resources';
 import { TOOLS } from '../lib/toolsText';
@@ -208,6 +209,7 @@ export function CheckRepresentative({ lang, onReport }: { lang: Lang; onReport: 
           )}
         </div>
       </section>
+      {role && <FeedbackPrompt lang={lang} feature="rep_check" />}
     </>
   );
 }
