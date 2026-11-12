@@ -100,8 +100,8 @@ describe('terms acceptance', () => {
 });
 
 describe('draft 2 changes', () => {
-  const terms = (lang: 'en' | 'es') => LEGAL[lang].terms.sections;
-  const text = (lang: 'en' | 'es') => allText(LEGAL[lang].terms);
+  const terms = (lang: 'en' | 'es' | 'hi' | 'pa' | 'ur') => LEGAL[lang].terms.sections;
+  const text = (lang: 'en' | 'es' | 'hi' | 'pa' | 'ur') => allText(LEGAL[lang].terms);
 
   it('has a "Users under 18" section and the same sentence on the acceptance screen', () => {
     expect(terms('en')[5].heading).toBe('6. Users under 18');
@@ -109,9 +109,9 @@ describe('draft 2 changes', () => {
     for (const lang of ['en', 'es'] as const) expect(LEGAL[lang].acceptIntro).toContain(terms(lang)[5].paragraphs![0]);
   });
 
-  it('numbers the Terms sections 1–15 in order, in both languages', () => {
-    for (const lang of ['en', 'es'] as const)
-      expect(terms(lang).map((s) => parseInt(s.heading, 10))).toEqual(Array.from({ length: 15 }, (_, i) => i + 1));
+  it('numbers the Terms sections 1–16 in order, in every language', () => {
+    for (const lang of ['en', 'es', 'hi', 'pa', 'ur'] as const)
+      expect(terms(lang).map((s) => parseInt(s.heading, 10))).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
   });
 
   it('adds severability, entire agreement and Pennsylvania governing law with placeholders', () => {
@@ -137,5 +137,42 @@ describe('draft 2 changes', () => {
 
   it('asks everyone to accept the changed terms again', () => {
     expect(TERMS_VERSION).not.toBe('2026-11-10-draft');
+  });
+});
+
+
+describe('Language section (English version controls)', () => {
+  const LANGS_ALL = ['en', 'es', 'hi', 'pa', 'ur'] as const;
+  const EN_TERMS =
+    'These Terms are written in English and translated for convenience. If a translation differs from the English version, the English version controls.';
+
+  it('is the last section of the Terms, with the exact English wording', () => {
+    const last = LEGAL.en.terms.sections[15];
+    expect(last.heading).toBe('16. Language');
+    expect(last.paragraphs).toEqual([EN_TERMS]);
+  });
+
+  it('is the last section of the Privacy Policy', () => {
+    const last = LEGAL.en.privacy.sections[LEGAL.en.privacy.sections.length - 1];
+    expect(last.heading).toBe('Language');
+    expect(last.paragraphs![0]).toBe(
+      'This Privacy Policy is written in English and translated for convenience. If a translation differs from the English version, the English version controls.',
+    );
+  });
+
+  it('appears in every language, and the acceptance screen repeats the Terms sentence', () => {
+    for (const lang of LANGS_ALL) {
+      const L = LEGAL[lang];
+      const termsSentence = L.terms.sections[15].paragraphs![0];
+      expect(termsSentence.length, lang).toBeGreaterThan(40);
+      expect(L.privacy.sections[L.privacy.sections.length - 1].paragraphs![0].length, lang).toBeGreaterThan(40);
+      expect(L.acceptLanguageNote, lang).toBe(termsSentence);
+    }
+    expect(LEGAL.en.acceptLanguageNote).toBe(EN_TERMS);
+  });
+
+  it('asks everyone to accept the changed Terms again', () => {
+    expect(TERMS_VERSION).not.toBe('2026-11-10-draft-2');
+    expect(TERMS_VERSION).toMatch(/draft/);
   });
 });

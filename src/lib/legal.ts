@@ -15,7 +15,7 @@ import { hiLegal } from './locales/hi';
 import { paLegal } from './locales/pa';
 import { urLegal } from './locales/ur';
 
-export const TERMS_VERSION = '2026-11-10-draft-2';
+export const TERMS_VERSION = '2026-11-12-draft-4';
 export const IS_DRAFT = true;
 
 export interface Section {
@@ -41,6 +41,8 @@ export interface LegalText {
   acceptCheckbox: string;
   acceptButton: string;
   acceptStorageNote: string;
+  /** Small print on the acceptance screen: the English version controls. */
+  acceptLanguageNote: string;
   back: string;
   disclaimer: LegalDoc;
   terms: LegalDoc;
@@ -66,6 +68,7 @@ const en: LegalText = {
     'I have read and agree to the Terms of Use and the Privacy Policy. I understand that LexCourt is not a law firm, does not give legal advice, can make mistakes, and that I must check every detail myself.',
   acceptButton: 'Continue',
   acceptStorageNote: 'This device will remember that you agreed, so you won’t be asked again. Nothing else is saved.',
+  acceptLanguageNote: 'These Terms are written in English and translated for convenience. If a translation differs from the English version, the English version controls.',
   back: '← Back',
   disclaimer: {
     title: 'Disclaimer',
@@ -108,7 +111,7 @@ const en: LegalText = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: 'Draft 2 of November 10, 2026',
+    updated: 'Draft 4 of November 12, 2026',
     sections: [
       {
         heading: '1. Agreement',
@@ -196,11 +199,17 @@ const en: LegalText = {
           'These Terms are governed by the laws of the Commonwealth of Pennsylvania. LexCourt is operated by [OPERATOR NAME]. Contact: [CONTACT EMAIL].',
         ],
       },
+      {
+        heading: '16. Language',
+        paragraphs: [
+          'These Terms are written in English and translated for convenience. If a translation differs from the English version, the English version controls.',
+        ],
+      },
     ],
   },
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Draft 2 of November 10, 2026',
+    updated: 'Draft 4 of November 12, 2026',
     sections: [
       {
         heading: 'In short',
@@ -251,6 +260,12 @@ const en: LegalText = {
           'If this policy changes, we will update it here and, if needed, ask you to accept it again. LexCourt is operated by [OPERATOR NAME]. Contact: [CONTACT EMAIL]. [ATTORNEY REVIEW: confirm any state privacy-law notices required.]',
         ],
       },
+      {
+        heading: 'Language',
+        paragraphs: [
+          'This Privacy Policy is written in English and translated for convenience. If a translation differs from the English version, the English version controls.',
+        ],
+      },
     ],
   },
 };
@@ -274,6 +289,7 @@ const es: LegalText = {
     'Leí y acepto los Términos de uso y la Política de privacidad. Entiendo que LexCourt no es un bufete de abogados, no da asesoría legal, puede cometer errores, y que yo debo revisar cada dato.',
   acceptButton: 'Continuar',
   acceptStorageNote: 'Este dispositivo recordará que usted aceptó, para no preguntarle otra vez. No se guarda nada más.',
+  acceptLanguageNote: 'Estos Términos están escritos en inglés y se traducen para su comodidad. Si una traducción es diferente de la versión en inglés, prevalece la versión en inglés.',
   back: '← Volver',
   disclaimer: {
     title: 'Aviso legal',
@@ -316,7 +332,7 @@ const es: LegalText = {
   },
   terms: {
     title: 'Términos de uso',
-    updated: 'Borrador 2 del 10 de noviembre de 2026',
+    updated: 'Borrador 4 del 12 de noviembre de 2026',
     sections: [
       {
         heading: '1. Acuerdo',
@@ -404,11 +420,17 @@ const es: LegalText = {
           'Estos Términos se rigen por las leyes de la Mancomunidad de Pensilvania (Commonwealth of Pennsylvania). LexCourt es operado por [OPERATOR NAME]. Contacto: [CONTACT EMAIL].',
         ],
       },
+      {
+        heading: '16. Idioma',
+        paragraphs: [
+          'Estos Términos están escritos en inglés y se traducen para su comodidad. Si una traducción es diferente de la versión en inglés, prevalece la versión en inglés.',
+        ],
+      },
     ],
   },
   privacy: {
     title: 'Política de privacidad',
-    updated: 'Borrador 2 del 10 de noviembre de 2026',
+    updated: 'Borrador 4 del 12 de noviembre de 2026',
     sections: [
       {
         heading: 'En resumen',
@@ -457,6 +479,12 @@ const es: LegalText = {
         heading: 'Cambios y contacto',
         paragraphs: [
           'Si esta política cambia, la actualizaremos aquí y, si es necesario, le pediremos aceptarla otra vez. LexCourt es operado por [OPERATOR NAME]. Contacto: [CONTACT EMAIL]. [REVISIÓN DE ABOGADO: confirmar avisos requeridos por leyes estatales de privacidad.]',
+        ],
+      },
+      {
+        heading: 'Idioma',
+        paragraphs: [
+          'Esta Política de privacidad está escrita en inglés y se traduce para su comodidad. Si una traducción es diferente de la versión en inglés, prevalece la versión en inglés.',
         ],
       },
     ],

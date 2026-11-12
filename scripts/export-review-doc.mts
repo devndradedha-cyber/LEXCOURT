@@ -108,6 +108,7 @@ const partOnScreen: Part = {
     })),
     { kind: 'text', id: L(), where: 'Acceptance screen: checkbox label (must be ticked to continue)', key: 'legal.acceptCheckbox', en: lEn.acceptCheckbox, es: lEs.acceptCheckbox },
     { kind: 'text', id: L(), where: 'Acceptance screen: button (disabled until the box is ticked)', key: 'legal.acceptButton', en: lEn.acceptButton, es: lEs.acceptButton },
+    { kind: 'text', id: L(), where: 'Acceptance screen: small print under the checkbox', key: 'legal.acceptLanguageNote', en: lEn.acceptLanguageNote, es: lEs.acceptLanguageNote },
     { kind: 'text', id: L(), where: 'Acceptance screen: note under the button', key: 'legal.acceptStorageNote', en: lEn.acceptStorageNote, es: lEs.acceptStorageNote },
     { kind: 'heading', text: 'Draft label and navigation', textEs: 'Etiqueta de borrador y navegación' },
     { kind: 'text', id: L(), where: 'Draft label (acceptance screen, legal pages, footer)', key: 'legal.draftBadge', en: lEn.draftBadge, es: lEs.draftBadge, note: 'Remove once the text is approved.' },
@@ -416,7 +417,7 @@ for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS
 // Revision tracking: what changed in this draft, marked on each row
 // ---------------------------------------------------------------------------
 
-const REVISION = 'draft 3';
+const REVISION = 'draft 4';
 interface Change {
   n: number;
   /** Which draft made the change (default: draft 2). */
@@ -440,6 +441,7 @@ const CHANGES: Change[] = [
   { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[6].paragraphs[0]'] },
   { n: 14, rev: 'draft 3', kind: 'NEW', what: 'Hindi, Punjabi and Urdu: every piece of text translated (new columns). Immigration terms are kept in English in brackets. DRAFT, needs native speaker review.', keys: [] },
   { n: 15, rev: 'draft 3', kind: 'NEW', what: 'Language menu (English, Español, हिन्दी, ਪੰਜਾਬੀ, اردو) replaces the language button; its label, the draft-translation notice, and a message when voice input does not support the language.', keys: ['i18n.langLabel', 'i18n.translationDraft', 'i18n.voiceLangUnsupported'] },
+  { n: 16, rev: 'draft 4', kind: 'NEW', what: 'Language: Terms section 16 and a Privacy Policy section say the English version controls if a translation differs; the same sentence in small print on the acceptance screen. In all five languages. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[15].heading', 'legal.terms.sections[15].paragraphs[0]', 'legal.privacy.sections[7].heading', 'legal.privacy.sections[7].paragraphs[0]', 'legal.acceptLanguageNote'] },
   { n: 13, kind: 'NEW', what: 'Spanish search description and home-screen description (served at /es/).', keys: ['index.html meta description (+ es/)', 'manifest.webmanifest description (+ es/)'] },
 ];
 /** Reviewer notes added in this draft. `decision` ones are also listed under “Decisions needed”. */
@@ -448,6 +450,10 @@ const NOTES: Record<string, { note: string; decision?: boolean }> = {
   'legal.terms.sections[9].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
   'legal.terms.sections[10].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
   'legal.terms.sections[14].paragraphs[0]': { note: 'No venue / forum clause yet: add one if wanted.', decision: true },
+  'legal.terms.sections[15].paragraphs[0]': {
+    note: 'Confirm an “English version controls” clause is appropriate and enforceable for users who may not read English (the app’s audience), and whether translations should be described as unofficial instead.',
+    decision: true,
+  },
   'i18n.helpForms': { note: 'Whether the online form needs an account could not be confirmed (site not reachable from the build environment), so the claim was removed.' },
 };
 const RENUMBERED = [6, 7, 8, 9, 10, 11].map((i) => `legal.terms.sections[${i}].heading`);
@@ -768,7 +774,7 @@ const intro: (Paragraph | Table)[] = [
   bullet('Accuracy of the legal statements, for example: in absentia orders for missed hearings; the 5-day deadline to file Form EOIR-33/IC after moving; the right to counsel at no expense to the government; free interpreters at hearings; the descriptions of master calendar and individual hearings, Notices to Appear and Notices of Hearing.'),
   bullet('Privacy Policy accuracy against how the app works (described above), and any notices required by state privacy laws.'),
   bullet('Spanish: whether each Spanish text says the same thing as the English, with no change in legal meaning. A qualified legal translator should also review it.'),
-  bullet('Hindi, Punjabi and Urdu (new): the Terms do not yet say which language version controls if the translations differ from the English. Should they (for example, “the English version governs”)? And is accepting the Terms in a draft translation acceptable before the translations are reviewed?'),
+  bullet('Language clause (new in draft 4): Terms section 16 and the Privacy Policy now say the English version controls if a translation differs. Is that appropriate for users who may not read English, and is accepting the Terms in a draft translation acceptable before the translations are reviewed?'),
   bullet('New “Check a representative” and “Report a problem” pages (Parts 9–10): accuracy of how to verify lawyers and accredited representatives, the notario warning signs, which offices handle which complaints (routing table), and the wording around filing complaints, including the note for people worried about how a complaint could affect them.'),
   bullet('The decisions listed below, which the draft leaves open.'),
 

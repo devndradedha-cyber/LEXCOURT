@@ -263,6 +263,7 @@ function AcceptTerms({ lang, onAccept }: { lang: Lang; onAccept: () => void }) {
         <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
         <span>{legal.acceptCheckbox}</span>
       </label>
+      <p className="hint small">{legal.acceptLanguageNote}</p>
       <button className="btn primary big" disabled={!checked} onClick={onAccept}>
         {legal.acceptButton}
       </button>
