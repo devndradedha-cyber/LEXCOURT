@@ -2,10 +2,11 @@
  * Turn an uploaded photo or PDF into text, on the device.
  *
  * - PDFs with real text are read directly with pdf.js.
- * - Scanned PDFs and photos are read with Tesseract OCR (English + Spanish).
+ * - Scanned PDFs and photos are read with Tesseract OCR: English and Spanish,
+ *   plus Hindi or Punjabi when the app is in that language (see ocrLanguages).
  *
- * The file itself never leaves the browser. The OCR engine and its English and
- * Spanish models are served by LexCourt itself from /tesseract/ (copied there by
+ * The file itself never leaves the browser. The OCR engine and its language
+ * models are served by LexCourt itself from /tesseract/ (copied there by
  * scripts/copy-ocr-assets.mjs); nothing is loaded from a CDN.
  */
 
@@ -13,11 +14,23 @@ export type Progress = (stage: 'pdf' | 'ocr-loading' | 'ocr', fraction: number) 
 
 const MAX_PDF_PAGES = 4;
 
-export async function fileToText(file: File, onProgress: Progress = () => {}): Promise<string> {
+/**
+ * Tesseract models to load. Court notices are in English (sometimes Spanish);
+ * the Hindi (hin) or Punjabi (pan, Gurmukhi) model is added only when the app
+ * is in that language, so other people never download it (about 1.4 MB each)
+ * and English reading stays as fast as before.
+ */
+export function ocrLanguages(appLang: string): string[] {
+  const extra: Record<string, string> = { hi: 'hin', pa: 'pan' };
+  return extra[appLang] ? ['eng', 'spa', extra[appLang]] : ['eng', 'spa'];
+}
+
+export async function fileToText(file: File, onProgress: Progress = () => {}, appLang = 'en'): Promise<string> {
   const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-  if (isPdf) return pdfToText(file, onProgress);
+  const langs = ocrLanguages(appLang);
+  if (isPdf) return pdfToText(file, onProgress, langs);
   if (file.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(file.name)) {
-    return ocr([file], onProgress);
+    return ocr([file], onProgress, langs);
   }
   throw new Error('unsupported-file');
 }
@@ -29,7 +42,7 @@ async function loadPdfJs() {
   return pdfjs;
 }
 
-async function pdfToText(file: File, onProgress: Progress): Promise<string> {
+async function pdfToText(file: File, onProgress: Progress, langs: string[]): Promise<string> {
   const pdfjs = await loadPdfJs();
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const pages = Math.min(doc.numPages, MAX_PDF_PAGES);
@@ -63,15 +76,15 @@ async function pdfToText(file: File, onProgress: Progress): Promise<string> {
     if (blob) images.push(blob);
   }
   await doc.destroy();
-  return ocr(images, onProgress);
+  return ocr(images, onProgress, langs);
 }
 
-async function ocr(images: Blob[], onProgress: Progress): Promise<string> {
+async function ocr(images: Blob[], onProgress: Progress, langs: string[]): Promise<string> {
   onProgress('ocr-loading', 0);
   const { createWorker } = await import('tesseract.js');
   let pageIndex = 0;
   const base = `${import.meta.env.BASE_URL}tesseract`;
-  const worker = await createWorker(['eng', 'spa'], 1, {
+  const worker = await createWorker(langs, 1, {
     workerPath: `${base}/worker.min.js`,
     corePath: `${base}/core`,
     langPath: `${base}/lang`,

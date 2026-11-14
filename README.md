@@ -45,8 +45,12 @@ The app is in **English, Spanish, Hindi (Devanagari), Punjabi (Gurmukhi) and Urd
   - **LexCourt never connects to the court**: nothing is fetched or sent.
 - **Read aloud:** a 🔊 button on each explanation, the case status page, the legal pages, and the representative and report pages.
   - It reads in the selected language with `speechSynthesis`.
-  - **Only on-device voices** (`localService`) are used, so no text is sent to an online voice service. If there's no voice for the language, it shows a note.
+  - On-device voices (`localService`) are used first. If the only voice for the language is online (for example Chrome's “Google हिन्दी” on a computer), LexCourt asks before using it and removes long numbers like the A-Number first. Phones that list no voices are asked to speak the language directly (`hi-IN`, `pa-IN`).
+  - Punjabi with no Punjabi voice (iPhones, computers) is read with the Hindi voice after a letter-by-letter Gurmukhi→Devanagari conversion, with a note saying so.
+  - In Hindi, Punjabi and Urdu, English glosses in brackets such as “(Notice to Appear)” or “(A-Number)” are skipped, because the term was just read in the person's own language and the voice would mispronounce the English.
+  - If there's no voice at all for the language, it shows a note in that language.
   - Text is spoken one sentence at a time (`src/lib/readAloud.ts`).
+- **Voice input** tries the exact tag first and then the plain one (`pa-Guru-IN` → `pa-IN`); if the browser can't recognise the language it says so in that language and typing keeps working.
 - **Glossary:** 10 terms (removal, relief, asylum, in absentia, Notice to Appear, master calendar hearing, individual hearing, A-Number, accredited representative, appeal).
   - Terms are underlined in explanations; tapping one shows its meaning, and a "Words to know" list shows all ten.
   - Matching works in all five scripts (`src/lib/glossary.ts`).
@@ -132,7 +136,7 @@ The note *“Always double-check the date on your official notice. Reminders may
 - **No accounts, no analytics, no cookies.** Nothing the user enters is stored or sent to a server, and closing the page removes it. The only thing saved on the device is the accepted terms version, in `localStorage`.
 - **The exceptions are what the person chooses to send:** email reminders (below) and **feedback** (stars, optional comment, feature, language, date), stored in Supabase through LexCourt’s own `/api` (see Feedback above). Personal details are blocked in the app and removed again on the server.
 - Photos and PDFs are processed in the browser using `pdf.js` and `tesseract.js` OCR. The file is never uploaded.
-- **No CDN.** The OCR engine (worker + WebAssembly core) and the English and Spanish models (~5 MB, downloaded once when someone first reads a photo) are served by LexCourt itself from `/tesseract/`. `scripts/copy-ocr-assets.mjs` copies them from `node_modules` before every `dev` and `build`. The browser caches the models (not any user data) in IndexedDB so later reads are faster.
+- **No CDN.** The OCR engine (worker + WebAssembly core) and the English and Spanish models (~5 MB, downloaded once when someone first reads a photo), plus the Hindi (`hin`) or Punjabi (`pan`, Gurmukhi) model (~1.4 MB each) only when the app is in that language, are served by LexCourt itself from `/tesseract/`. `scripts/copy-ocr-assets.mjs` copies them from `node_modules` before every `dev` and `build`. The browser caches the models (not any user data) in IndexedDB so later reads are faster.
 - The production build sets a **Content-Security-Policy** that only allows scripts and data requests to LexCourt's own origin, so the browser itself blocks anything from being sent elsewhere. Links the user taps still open normally.
 - **Voice** uses the browser's Web Speech API. Some browsers, including Chrome, send the audio to the browser maker's servers. The app tells the user this next to the microphone button and lets them type instead.
 - Calendar reminders go into the user's own calendar. The Google Calendar link sends the event details to Google only if the user taps it.

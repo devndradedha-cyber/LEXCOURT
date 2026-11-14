@@ -29,6 +29,8 @@
   },
   "devDependencies": {
     "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/hin": "1.0.0",
+    "@tesseract.js-data/pan": "1.0.0",
     "@tesseract.js-data/spa": "1.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "18.3.12",

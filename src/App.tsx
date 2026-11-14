@@ -122,7 +122,7 @@ export default function App() {
     };
     onProgress('pdf', 0);
     try {
-      const text = await fileToText(file, onProgress);
+      const text = await fileToText(file, onProgress, lang);
       analyze(text);
     } catch (e) {
       setError(e instanceof Error && e.message === 'unsupported-file' ? t.errorUnsupported : t.errorRead);

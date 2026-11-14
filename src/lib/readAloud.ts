@@ -136,6 +136,24 @@ export function plainTag(tag: string): string {
   return tag.replace(/-[A-Z][a-z]{3}(?=-|$)/, '');
 }
 
+/**
+ * Remove English glosses in brackets, such as "(Notice to Appear)" or
+ * "(A-Number)", which Hindi, Punjabi and Urdu text adds after the term in its
+ * own script. A Hindi or Punjabi voice mispronounces the English, and the
+ * term has just been read in the person's language. Brackets that contain
+ * any Indian or Urdu script are kept.
+ */
+export function stripEnglishGlosses(text: string): string {
+  return text
+    .replace(/\s*[\u2066\u2068]?\(\s*[A-Za-z][^()\u0600-\u06FF\u0900-\u0DFF]*\)[\u2069]?/g, '')
+    // "(Notice to Appear, फ़ॉर्म I-862)" -> "(फ़ॉर्म I-862)"
+    .replace(/\(\s*[A-Za-z][A-Za-z0-9 .'’\/&-]*,\s*(?=[^)]*[\u0600-\u06FF\u0900-\u0DFF])/g, '(')
+    .replace(/[ \t]+([,.;:!?।۔،؟])/g, '$1');
+}
+
+/** Languages whose text carries English glosses in brackets. */
+const GLOSSED = /^(hi|pa|ur)\b/i;
+
 export type SpeakResult = 'ok' | 'viaHindi' | 'noVoice' | 'onlineOnly';
 
 /**
@@ -151,7 +169,7 @@ export async function speak(text: string, tag: string, onEnd: () => void, allowO
   const voices = await loadVoices();
   let voice = pickVoice(voices, tag, allowOnline);
   let result: SpeakResult = 'ok';
-  let body = text;
+  let body = GLOSSED.test(tag) ? stripEnglishGlosses(text) : text;
   // Punjabi: most iPhones and computers have no Punjabi voice. Read the
   // Gurmukhi text with a Hindi voice instead (letter-for-letter conversion).
   if (!voice && voices.length && tag.toLowerCase().startsWith('pa')) {
@@ -159,7 +177,7 @@ export async function speak(text: string, tag: string, onEnd: () => void, allowO
     if (hindi) {
       voice = hindi;
       result = 'viaHindi';
-      body = gurmukhiToDevanagari(text);
+      body = gurmukhiToDevanagari(body);
     }
   }
   if (!voice && voices.length) {

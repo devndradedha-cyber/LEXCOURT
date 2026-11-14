@@ -1,5 +1,5 @@
 // Copies the OCR engine (tesseract.js worker + WebAssembly core) and the
-// English and Spanish language models into public/tesseract/, so the app
+// English, Spanish, Hindi and Punjabi language models into public/tesseract/, so the app
 // serves them itself instead of downloading them from a CDN.
 // Runs automatically before `npm run dev` and `npm run build`.
 import { copyFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
@@ -26,7 +26,9 @@ for (const f of readdirSync(coreDir)) {
 }
 
 // "best_int" models: the same ones tesseract.js uses by default for OEM 1.
-for (const lang of ['eng', 'spa']) {
+// Hindi (hin) and Punjabi (pan) are only downloaded by the browser when the
+// app is in that language (see ocrLanguages in src/lib/readFile.ts).
+for (const lang of ['eng', 'spa', 'hin', 'pan']) {
   copyFileSync(
     join(pkgDir(`@tesseract.js-data/${lang}`), '4.0.0_best_int', `${lang}.traineddata.gz`),
     join(out, 'lang', `${lang}.traineddata.gz`),
