@@ -39,6 +39,8 @@ import { recommend, type Answers, type Issue, type Who } from '../src/lib/report
 import { SUMMARY, TOOLS } from '../src/lib/toolsText';
 import { FEATURES } from '../src/lib/featuresText';
 import { FEEDBACK } from '../src/lib/feedbackText';
+import { DESIGN } from '../src/lib/designText';
+import { REMINDER_TEXT } from '../src/lib/reminderText';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(root, 'review', 'LexCourt-text-for-attorney-review.docx');
@@ -299,6 +301,12 @@ const SAMPLES: Record<string, unknown[]> = {
   reminderEventDescription: [null],
   noVoice: ['[language name]'],
   made: ['[date]'],
+  forDate: ['[date]'],
+  pageConfirmed: ['[label]', '[date]'],
+  confirmIntro: ['[label]', '[date]'],
+  when: [7],
+  reminderSubject: ['[label]', '[when]', '[date]'],
+  reminderLine: ['[label]', '[when]', '[date]'],
 };
 const SAMPLE_NOTE: Record<string, string> = {
   stepsTitle: 'Shows the name the user typed, or “this person”.',
@@ -309,6 +317,12 @@ const SAMPLE_NOTE: Record<string, string> = {
   reminderEventDescription: 'Written into the monthly calendar reminder. Shown without an A-Number (the default); if the person ticks “Include my A-Number”, the number replaces the last sentence’s request.',
   noVoice: 'Shows the language’s own name, for example हिन्दी.',
   made: 'Shows today’s date.',
+  forDate: 'Shows the date in the person’s language, for example “Thursday, March 4, 2027”.',
+  pageConfirmed: 'Shows the label (for example “Court hearing”) and the date.',
+  confirmIntro: 'Shows the label (for example “Court hearing”) and the date.',
+  when: 'Shown as “tomorrow” for 1 day, otherwise “in N days” (example: 7).',
+  reminderSubject: 'Email subject. [label] = Court hearing / Deadline / Appointment; [when] = “tomorrow” or “in N days”.',
+  reminderLine: 'First line of each reminder email.',
 };
 
 function flatten(prefix: string, next: () => string, a: unknown, b: unknown, path: string, where: string, rows: Row[]) {
@@ -390,6 +404,22 @@ const partFeedback: Part = {
   rows: toolRows('FB', [['Feedback prompt', 'Comentarios', FEEDBACK.en, FEEDBACK.es, 'feedback']]),
 };
 
+// Redesign and deadline reminders (draft 7)
+const rEn = REMINDER_TEXT.en;
+const rEs = REMINDER_TEXT.es;
+const { email: _eEn, ...rEnUi } = rEn;
+const { email: _eEs, ...rEsUi } = rEs;
+const partRedesign: Part = {
+  title: 'Welcome screen, result cards and deadline reminders (new, draft)',
+  intro:
+    'New look. The welcome screen says “Understand your legal papers in your language” with one “Scan a document” button. Results are shown as three main cards: What this means, Your next date or deadline, and Where to get free help. Under the date, “Want a reminder?” offers (a) a calendar file made on the phone (nothing sent) and (b) email reminders 7, 2 and 1 days before the date. For email reminders LexCourt stores only the email address, the date, one of three fixed labels and the language, and deletes them after the date (or when the person stops them, or after 2 days if never confirmed). A confirmation email is sent first; every email has a one-click “stop” link. No text messages. The emails are in the table at the end of this part. All text is a draft that needs attorney review; the Hindi, Punjabi and Urdu columns also need native speaker review.',
+  rows: toolRows('W', [
+    ['Welcome screen, reading screen and result cards', 'Pantalla de inicio y tarjetas', DESIGN.en, DESIGN.es, 'design'],
+    ['Want a reminder? (calendar file and email reminders)', '¿Quiere un recordatorio?', rEnUi, rEsUi, 'reminder'],
+    ['Reminder emails (sent in the language the person used)', 'Correos de recordatorio', rEn.email, rEs.email, 'reminder.email'],
+  ]),
+};
+
 const partOther: Part = {
   title: 'Other text (search engines and home-screen icon)',
   intro:
@@ -413,9 +443,9 @@ const FN_ARGS: Record<string, unknown[]> = {
 };
 
 function resolveKey(key: string, lang: Lang): string | undefined {
-  const m = key.match(/^(i18n|legal|tools|summary|features|feedback)\.(.+?)(\(.*\))?$/);
+  const m = key.match(/^(i18n|legal|tools|summary|features|feedback|design|reminder)\.(.+?)(\(.*\))?$/);
   if (!m) return undefined;
-  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang], features: FEATURES[lang], feedback: FEEDBACK[lang] };
+  const roots: Record<string, unknown> = { i18n: STRINGS[lang], legal: LEGAL[lang], tools: TOOLS[lang], summary: SUMMARY[lang], features: FEATURES[lang], feedback: FEEDBACK[lang], design: DESIGN[lang], reminder: REMINDER_TEXT[lang] };
   let v: unknown = roots[m[1]];
   for (const part of m[2].match(/[^.[\]]+/g) ?? []) v = (v as Record<string, unknown>)?.[part];
   if (typeof v === 'function') {
@@ -440,7 +470,7 @@ function fillNewLanguages(rows: Row[]) {
   }
 }
 
-const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partFeatures, partFeedback, partOther];
+const PARTS: Part[] = [partOnScreen, partDisclaimer, partTerms, partPrivacy, partExplanations, partScreens, partReminders, partHelp, partCheck, partReport, partFeatures, partFeedback, partRedesign, partOther];
 const partNo = (p: Part) => PARTS.indexOf(p) + 1;
 for (const part of PARTS) fillNewLanguages(part.rows);
 for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS) r[l] = '— (no separate page in this language yet; the English description is used)';
@@ -449,7 +479,7 @@ for (const r of partOther.rows) if (r.kind === 'text') for (const l of NEW_LANGS
 // Revision tracking: what changed in this draft, marked on each row
 // ---------------------------------------------------------------------------
 
-const REVISION = 'draft 6';
+const REVISION = 'draft 7';
 interface Change {
   n: number;
   /** Shown instead of the row IDs in the “What changed” table. */
@@ -472,15 +502,18 @@ const CHANGES: Change[] = [
   { n: 9, kind: 'NEW', what: 'Terms: Severability and Entire agreement sections.', keys: ['legal.terms.sections[12].heading', 'legal.terms.sections[12].paragraphs[0]', 'legal.terms.sections[13].heading', 'legal.terms.sections[13].paragraphs[0]'] },
   { n: 10, kind: 'CHANGED', what: 'No warranty and Limitation of liability: reviewer note on Pennsylvania law (wording unchanged).', keys: ['legal.terms.sections[9].paragraphs[0]', 'legal.terms.sections[10].paragraphs[0]'] },
   { n: 11, kind: 'CHANGED', what: 'Terms: governed by Pennsylvania law; operator name and contact email placeholders.', keys: ['legal.terms.sections[14].paragraphs[0]'] },
-  { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[7].paragraphs[0]'] },
+  { n: 12, kind: 'CHANGED', what: 'Privacy Policy: operator name and contact email placeholders.', keys: ['legal.privacy.sections[8].paragraphs[0]'] },
   { n: 14, rev: 'draft 3', kind: 'NEW', what: 'Hindi, Punjabi and Urdu: every piece of text translated (new columns). Immigration terms are kept in English in brackets. DRAFT, needs native speaker review.', keys: [] },
   { n: 15, rev: 'draft 3', kind: 'NEW', what: 'Language menu (English, Español, हिन्दी, ਪੰਜਾਬੀ, اردو) replaces the language button; its label, the draft-translation notice, and a message when voice input does not support the language.', keys: ['i18n.langLabel', 'i18n.translationDraft', 'i18n.voiceLangUnsupported'] },
   { n: 17, rev: 'draft 5', kind: 'NEW', what: 'Four new features in all five languages: case status helper (with optional monthly reminder), read aloud, glossary of 10 legal terms, and a one-page legal aid summary to print, download or share.', keys: partFeatures.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: `Part ${partNo(partFeatures)}, every row` },
   { n: 18, rev: 'draft 5', kind: 'NEW', what: 'Privacy Policy, “Services you choose”: read aloud uses only voices on the device; the legal aid summary and monthly reminder are made on the device and never sent by LexCourt. (Privacy Policy date line: Draft 5. Terms unchanged, so users are not asked to accept again.)', keys: ['legal.privacy.sections[4].bullets[4]', 'legal.privacy.sections[4].bullets[5]'] },
-  { n: 16, rev: 'draft 4', kind: 'NEW', what: 'Language: Terms section 16 and a Privacy Policy section say the English version controls if a translation differs; the same sentence in small print on the acceptance screen. In all five languages. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[15].heading', 'legal.terms.sections[15].paragraphs[0]', 'legal.privacy.sections[8].heading', 'legal.privacy.sections[8].paragraphs[0]', 'legal.acceptLanguageNote'] },
+  { n: 16, rev: 'draft 4', kind: 'NEW', what: 'Language: Terms section 16 and a Privacy Policy section say the English version controls if a translation differs; the same sentence in small print on the acceptance screen. In all five languages. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[15].heading', 'legal.terms.sections[15].paragraphs[0]', 'legal.privacy.sections[9].heading', 'legal.privacy.sections[9].paragraphs[0]', 'legal.acceptLanguageNote'] },
   { n: 19, rev: 'draft 6', kind: 'NEW', what: 'Feedback prompt (“How helpful was this?”) in all five languages: 1–5 stars for LexCourt only, optional private comment, warning not to include personal details, consent box for sharing, and a prompt to use Report a problem when a comment mentions fraud or a scam. Plus an English-only admin page with ratings and a moderation queue.', keys: partFeedback.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: `Part ${partNo(partFeedback)}, every row` },
   { n: 20, rev: 'draft 6', kind: 'NEW', what: 'Privacy Policy: new section “Feedback you choose to send” (what is stored, who can read it, Supabase, publishing only with consent and approval, how to ask for deletion); “In short” now says LexCourt keeps feedback if the person sends it; the privacy box on the start screen says the same. Date lines: Draft 6.', keys: ['legal.privacy.sections[0].bullets[2]', 'legal.privacy.sections[5].heading', 'legal.privacy.sections[5].paragraphs[0]', 'legal.privacy.sections[5].paragraphs[1]', 'legal.privacy.sections[5].paragraphs[2]', 'legal.privacy.sections[5].paragraphs[3]', 'i18n.privacy[3]', 'legal.privacy.updated', 'legal.terms.updated'] },
   { n: 21, rev: 'draft 6', kind: 'NEW', what: 'Terms section 17, “Feedback”: ratings are about LexCourt only; permission to publish a shared comment after names are removed; no fraud or misconduct accusations in feedback. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[16].heading', 'legal.terms.sections[16].paragraphs[0]'] },
+  { n: 22, rev: 'draft 7', kind: 'NEW', what: 'Redesign: welcome screen (“Understand your legal papers in your language”, one “Scan a document” button), a calm reading screen, and results as three cards (What this means / Your next date or deadline / Where to get free help). Deadline reminders: “Want a reminder?” with a calendar file or email reminders 7, 2 and 1 days before; the reminder emails. All five languages.', keys: partRedesign.rows.flatMap((r) => (r.kind === 'text' ? [r.key] : [])), rowsLabel: `Part ${partNo(partRedesign)}, every row` },
+  { n: 23, rev: 'draft 7', kind: 'NEW', what: 'Privacy Policy: new section “Email reminders you ask for” (what is stored, confirmation, deletion after the date, Resend and Supabase, counting emails sent without personal details); an exception paragraph in “Information you enter”; “In short” and the privacy box on the start screen updated. Date lines: Draft 7.', keys: ['legal.privacy.sections[0].bullets[2]', 'legal.privacy.sections[1].paragraphs[2]', 'legal.privacy.sections[6].heading', 'legal.privacy.sections[6].paragraphs[0]', 'legal.privacy.sections[6].paragraphs[1]', 'legal.privacy.sections[6].paragraphs[2]', 'i18n.privacy[2]', 'legal.privacy.updated', 'legal.terms.updated'] },
+  { n: 24, rev: 'draft 7', kind: 'NEW', what: 'Terms section 18, “Reminders”: reminders are a free convenience and may fail; always double-check the date; LexCourt is not responsible for missed dates; email reminders can be stopped at any time. (Terms version changed, so users accept again.)', keys: ['legal.terms.sections[17].heading', 'legal.terms.sections[17].paragraphs[0]'] },
   { n: 13, kind: 'NEW', what: 'Spanish search description and home-screen description (served at /es/).', keys: ['index.html meta description (+ es/)', 'manifest.webmanifest description (+ es/)'] },
 ];
 /** Reviewer notes added in this draft. `decision` ones are also listed under “Decisions needed”. */
@@ -489,6 +522,10 @@ const NOTES: Record<string, { note: string; decision?: boolean }> = {
   'legal.terms.sections[9].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
   'legal.terms.sections[10].paragraphs[0]': { note: 'Confirm enforceability under Pennsylvania law and the Pennsylvania Unfair Trade Practices and Consumer Protection Law; free service, no payment.', decision: true },
   'legal.terms.sections[14].paragraphs[0]': { note: 'No venue / forum clause yet: add one if wanted.', decision: true },
+  'reminder.disclaimer': {
+    note: 'Required wording (from the product owner). Shown next to both reminder options and in every email. Confirm it is enough, together with Terms section 18.',
+    decision: true,
+  },
   'legal.terms.sections[16].paragraphs[0]': {
     note: 'Confirm this permission to publish (a licence for user comments) is enough, and whether a separate consent text or age check is needed before publishing any comment.',
     decision: true,
@@ -791,7 +828,7 @@ const intro: (Paragraph | Table)[] = [
     'LexCourt is a free, mobile-first web app for people in U.S. immigration court who do not have a lawyer. Its first feature, the Notice Reader, lets a person take a photo of their court notice, choose a PDF, or describe the notice by voice or text. The app then shows the hearing date, time and court address it found, explains the notice in plain language, offers calendar reminders, and links to free legal help. It is available in English and Spanish.',
   ),
   body(
-    'Everything runs on the user’s own phone or computer. The notice is never uploaded, and the app has no accounts, analytics or cookies. It stores a note on the device that the user accepted the terms. Since draft 6 it also stores feedback a person chooses to send (a star rating and an optional comment about LexCourt) in a database, for LexCourt’s reviewers only; see the Feedback part. The details the app extracts are automatic guesses; users can correct them, and the app tells them to check every detail against the notice and the court.',
+    'Everything runs on the user’s own phone or computer. The notice is never uploaded, and the app has no accounts, analytics or cookies. It stores a note on the device that the user accepted the terms. Since draft 6 it also stores feedback a person chooses to send (a star rating and an optional comment about LexCourt) in a database, for LexCourt’s reviewers only; see the Feedback part. Since draft 7, if a person asks for email reminders, it stores their email address, the date, a fixed label and the language until the date passes; see the reminders part. The details the app extracts are automatic guesses; users can correct them, and the app tells them to check every detail against the notice and the court.',
   ),
 
   h2(`What changed since the first review copy (now ${REVISION})`),
@@ -819,6 +856,7 @@ const intro: (Paragraph | Table)[] = [
   bullet('Spanish: whether each Spanish text says the same thing as the English, with no change in legal meaning. A qualified legal translator should also review it.'),
   bullet('Language clause (new in draft 4): Terms section 16 and the Privacy Policy now say the English version controls if a translation differs. Is that appropriate for users who may not read English, and is accepting the Terms in a draft translation acceptable before the translations are reviewed?'),
   bullet(`New in draft 5 (Part ${partNo(partFeatures)}): the case status steps (including the TDD number 1-800-828-1120 and adding a 0 to 8-digit A-Numbers), the plain-language meanings of the 10 glossary terms (removal, relief, asylum, in absentia, Notice to Appear, master calendar hearing, individual hearing, A-Number, accredited representative, appeal) — especially the asylum one-year deadline and the 30-day appeal deadline — and the legal aid summary wording.`),
+  bullet(`New in draft 7 (Part ${partNo(partRedesign)}, Terms section 18, Privacy Policy “Email reminders you ask for”): the deadline reminder wording and emails, especially “Always double-check the date on your official notice. Reminders may fail. LexCourt is not responsible for missed dates.” Is the limitation of responsibility enforceable for a free service used by people at risk of an in absentia order, do the emails meet email-law requirements (CAN-SPAM, mailing address), and is storing an email address with a court date acceptable as described?`),
   bullet(`New in draft 6 (Part ${partNo(partFeedback)}, Terms section 17, Privacy Policy “Feedback you choose to send”): the feedback prompt and its rules — private by default; published only with consent and reviewer approval, after names are removed; no fraud or scam accusations (sent to Report a problem instead); no A-Numbers, case numbers or immigration status collected. Is the consent wording enough to publish a comment, is anything else required for storing feedback (retention, deletion, state privacy laws), and does a public review of LexCourt raise any concern?`),
   bullet('New “Check a representative” and “Report a problem” pages (Parts 9–10): accuracy of how to verify lawyers and accredited representatives, the notario warning signs, which offices handle which complaints (routing table), and the wording around filing complaints, including the note for people worried about how a complaint could affect them.'),
   bullet('The decisions listed below, which the draft leaves open.'),

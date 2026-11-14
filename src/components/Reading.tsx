@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { BookOpen, Square, Volume2 } from 'lucide-react';
+import { Icon } from './Art';
 import { FEATURES, TERM_IDS, type TermId } from '../lib/featuresText';
 import { segmentGlossary } from '../lib/glossary';
 import { langInfo, type Lang } from '../lib/i18n';
@@ -73,7 +75,7 @@ export function ListenButton({ lang, target }: { lang: Lang; target: React.RefOb
   return (
     <div className="listen" data-no-read>
       <button type="button" className="btn listen-btn" onClick={() => toggle()} aria-pressed={state === 'speaking'}>
-        <span aria-hidden="true">{state === 'speaking' ? '■' : '🔊'}</span> {state === 'speaking' ? t.stop : t.listen}
+        <Icon as={state === 'speaking' ? Square : Volume2} /> {state === 'speaking' ? t.stop : t.listen}
       </button>
       {state === 'noVoice' && (
         <p className="hint small" role="status">
@@ -156,7 +158,9 @@ export function WordsToKnow({ lang }: { lang: Lang }) {
   const ref = useRef<HTMLDivElement>(null);
   return (
     <details className="card subtle glossary">
-      <summary>📖 {g.title}</summary>
+      <summary>
+        <Icon as={BookOpen} /> {g.title}
+      </summary>
       <div ref={ref}>
         <p className="hint small">{g.hint}</p>
         <ListenButton lang={lang} target={ref} />

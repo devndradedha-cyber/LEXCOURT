@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Lock, TriangleAlert } from 'lucide-react';
+import { Icon } from './Art';
 import { langInfo, type Lang } from '../lib/i18n';
 import { EMPTY_DETAILS, ISSUES, buildSummary, recommend, type Answers, type AuthorityId, type CourtCase, type Details, type Who } from '../lib/report';
 import { OFFICIAL, US_STATES } from '../lib/resources';
@@ -62,8 +64,8 @@ export function ReportProblem({ lang }: { lang: Lang }) {
           <p key={p}>{p}</p>
         ))}
         <p className="info">
-          <strong>🔒 </strong>
-          {t.neverSubmit}
+          <Icon as={Lock} />
+          <span>{t.neverSubmit}</span>
         </p>
         <InfoNotAdvice lang={lang} />
       </section>
@@ -180,11 +182,17 @@ export function ReportProblem({ lang }: { lang: Lang }) {
           <div className="row">
             {step > 1 && (
               <button className="btn" onClick={() => setStep(step - 1)}>
-                ← {t.back}
+                <Icon as={ChevronLeft} className="flip-rtl" /> {t.back}
               </button>
             )}
             <button className="btn primary" disabled={!canNext} onClick={() => setStep(step + 1)}>
-              {step === STEPS ? t.seeResults : `${t.next} →`}
+              {step === STEPS ? (
+                t.seeResults
+              ) : (
+                <>
+                  {t.next} <Icon as={ChevronRight} className="flip-rtl" />
+                </>
+              )}
             </button>
           </div>
         </section>
@@ -254,7 +262,9 @@ function Results({
         {urgent && (
           <div className="alert">
             <p>
-              <strong>⚠️ {t.urgentTitle}</strong>
+              <strong>
+                <Icon as={TriangleAlert} /> {t.urgentTitle}
+              </strong>
             </p>
             <ul>
               {t.urgent.map((u) => (
@@ -312,7 +322,7 @@ function Results({
 
       <div className="row">
         <button className="btn" onClick={onBack}>
-          ← {t.back}
+          <Icon as={ChevronLeft} className="flip-rtl" /> {t.back}
         </button>
         <button className="btn" onClick={onRestart}>
           {t.startOver}

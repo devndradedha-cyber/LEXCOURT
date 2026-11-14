@@ -75,6 +75,34 @@ After the Notice Reader explanation and the Check a representative page, a small
 
 The serverless functions are in `api/` and call `server/feedbackApi.ts`. In `npm run dev` and `npm run preview`, the same handlers run in memory (nothing saved) and the admin password is `local-dev-password` unless `ADMIN_PASSWORD` is set.
 
+## Design (draft 7)
+
+Warm and calm, built for small phones first.
+
+- **Palette:** deep navy `#1E2A5A` (text, headings), warm teal `#14B8A6` (buttons, highlights), soft cream `#FAF7F2` (background), coral `#F97362` only for warnings and deadlines. People who use dark mode get a navy version.
+- **Contrast (WCAG AA):** white text on teal or coral is too faint (2.5:1 and 2.7:1), so teal buttons use navy text (5.5:1), and teal or coral *text* uses darker shades of the same colours (`#0F766E`, `#A63A2A`). Checked automatically with axe-core in the browser tests.
+- **Type:** Nunito (self-hosted, rounded and readable) for English and Spanish, Noto for Hindi, Punjabi and Urdu; nothing on screen is smaller than 16px.
+- **Icons and art:** Lucide line icons (bundled, no CDN). The welcome illustration shows four people of different backgrounds with speech bubbles in the app's five scripts. On purpose there are no seals, eagles, flags or anything that looks like a government site.
+- **Motion:** buttons lift slightly, results slide in gently, and a slow scanning page is shown while a document is read. All of it is switched off for people who ask their phone for less motion.
+- **Results:** three main cards — *What this means*, *Your next date or deadline* (with *Want a reminder?*), and *Where to get free help*.
+
+## Deadline reminders (draft)
+
+After the Notice Reader finds a date (or the person types one), *Want a reminder?* offers two free options:
+
+1. **Add to my calendar** — an `.ics` file made on the phone (Google, Apple, Outlook). Nothing is sent.
+2. **Email reminders** — 7 days, 2 days and 1 day before the date, in the person's language. The app sends only the email address, the date, one of three fixed labels (*Court hearing*, *Deadline*, *Appointment*) and the language; there is no free-text field, so an A-Number, case number, immigration status or the document can't be stored with it (the server also refuses any other field).
+   - A confirmation email is sent first (double opt-in), so nobody can sign up someone else. Unconfirmed addresses are deleted after 48 hours.
+   - Every email has a one-click stop link (`#/reminder/stop/…`, plus RFC 8058 `List-Unsubscribe` headers). Links are signed (HMAC), so no token is stored.
+   - A daily job (`/api/cron/reminders`, Vercel Cron at 15:00 UTC) sends what is due and deletes reminders whose date has passed.
+   - More than 3 reminders for one address are ignored silently, so the form can't be used to find out whether someone has a court date.
+   - Only counts are kept for the admin dashboard: reminder emails sent, people who confirmed, reminders waiting.
+   - No SMS.
+
+The note *“Always double-check the date on your official notice. Reminders may fail. LexCourt is not responsible for missed dates.”* is shown next to both options and in every email, and Terms section 18 says the same.
+
+**Setup:** run the reminders part of `supabase/schema.sql`, create a free [Resend](https://resend.com) account and verify a sending domain, then set in Vercel: `RESEND_API_KEY`, `REMINDER_FROM` (for example `LexCourt <reminders@your-domain.org>`), `REMINDER_SECRET` (random, 32+ characters), `CRON_SECRET` (random, 16+ characters) and optionally `APP_URL`. Without them the email option says it is unavailable and the calendar option still works. Locally (`npm run dev` / `npm run preview`) emails go to an in-memory outbox at `/api/dev/outbox`, and the daily job can be run with `curl -H "Authorization: Bearer local-cron-secret" localhost:5173/api/cron/reminders`.
+
 ## Hindi, Punjabi and Urdu (draft translations)
 
 > ⚠️ **DRAFT, needs native speaker review.** Every Hindi, Punjabi and Urdu screen shows a notice saying the translation is a draft.
@@ -102,12 +130,13 @@ The serverless functions are in `api/` and call `server/feedbackApi.ts`. In `npm
 ## Privacy
 
 - **No accounts, no analytics, no cookies.** Nothing the user enters is stored or sent to a server, and closing the page removes it. The only thing saved on the device is the accepted terms version, in `localStorage`.
-- **The one exception is feedback the person chooses to send** (stars, optional comment, feature, language, date), stored in Supabase through LexCourt’s own `/api` (see Feedback above). Personal details are blocked in the app and removed again on the server.
+- **The exceptions are what the person chooses to send:** email reminders (below) and **feedback** (stars, optional comment, feature, language, date), stored in Supabase through LexCourt’s own `/api` (see Feedback above). Personal details are blocked in the app and removed again on the server.
 - Photos and PDFs are processed in the browser using `pdf.js` and `tesseract.js` OCR. The file is never uploaded.
 - **No CDN.** The OCR engine (worker + WebAssembly core) and the English and Spanish models (~5 MB, downloaded once when someone first reads a photo) are served by LexCourt itself from `/tesseract/`. `scripts/copy-ocr-assets.mjs` copies them from `node_modules` before every `dev` and `build`. The browser caches the models (not any user data) in IndexedDB so later reads are faster.
 - The production build sets a **Content-Security-Policy** that only allows scripts and data requests to LexCourt's own origin, so the browser itself blocks anything from being sent elsewhere. Links the user taps still open normally.
 - **Voice** uses the browser's Web Speech API. Some browsers, including Chrome, send the audio to the browser maker's servers. The app tells the user this next to the microphone button and lets them type instead.
-- Reminders go into the user's own calendar. The Google Calendar link sends the event details to Google only if the user taps it.
+- Calendar reminders go into the user's own calendar. The Google Calendar link sends the event details to Google only if the user taps it.
+- **Email reminders** (only if asked for) store the email address, date, a fixed label and the language until the date passes — see Deadline reminders above.
 
 ## Development
 
@@ -159,5 +188,7 @@ Every push then deploys automatically. Other branches get their own preview URLs
 - [ ] Have an immigration attorney or DOJ-accredited representative review all text in `src/lib/i18n.ts`.
 - [ ] Have a native Spanish speaker review the Spanish text, ideally with people who will use the app.
 - [ ] Have the attorney review the feedback rules, Terms section 17 and the Privacy Policy feedback section (review document, Feedback part), including how long feedback is kept.
-- [ ] Add rate limiting for `/api/feedback` (for example Vercel Firewall rules); today only a hidden honeypot field filters bots.
+- [ ] Verify a sending domain in Resend, send yourself a reminder, and check it lands in the inbox (not spam) in each language.
+- [ ] Have the attorney review the reminder wording, Terms section 18 and the Privacy Policy reminders section (CAN-SPAM, mailing address in emails).
+- [ ] Add rate limiting for `/api/feedback` and `/api/reminders` (for example Vercel Firewall rules); today only a hidden honeypot field filters bots.
 - [ ] Test OCR on real (redacted) notices and phone photos, and tune `extract.ts`.

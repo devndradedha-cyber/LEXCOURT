@@ -1,4 +1,6 @@
 import { useId, useState } from 'react';
+import { CircleCheck, Lock, Star } from 'lucide-react';
+import { Icon } from './Art';
 import { findSensitive, mentionsScam } from '../lib/feedback/moderation';
 import { MAX_COMMENT, type FeedbackFeature } from '../lib/feedback/shared';
 import { FEEDBACK } from '../lib/feedbackText';
@@ -53,7 +55,9 @@ export function FeedbackPrompt({ lang, feature }: { lang: Lang; feature: Feedbac
   if (state === 'sent')
     return (
       <section className="card feedback" role="status">
-        <p className="feedback-thanks">✓ {t.thanks}</p>
+        <p className="feedback-thanks">
+          <Icon as={CircleCheck} /> {t.thanks}
+        </p>
         {queued && <p className="hint small">{t.thanksReview}</p>}
       </section>
     );
@@ -74,7 +78,7 @@ export function FeedbackPrompt({ lang, feature }: { lang: Lang; feature: Feedbac
             className={n <= rating ? 'star on' : 'star'}
             onClick={() => setRating(n)}
           >
-            ★
+            <Star size={28} strokeWidth={2} fill={n <= rating ? 'currentColor' : 'none'} aria-hidden="true" />
           </button>
         ))}
       </div>
@@ -95,7 +99,8 @@ export function FeedbackPrompt({ lang, feature }: { lang: Lang; feature: Feedbac
         />
       </label>
       <p className="warn small" id={`${id}-dont`}>
-        🔒 {t.doNotInclude}
+        <Icon as={Lock} />
+        <span>{t.doNotInclude}</span>
       </p>
 
       {kinds.length > 0 && (

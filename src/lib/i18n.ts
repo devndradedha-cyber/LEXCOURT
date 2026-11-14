@@ -107,7 +107,7 @@ const en: Strings = {
   privacy: [
     'Your notice is read on this phone or computer. We do not upload it, and we do not keep it.',
     'We have no accounts and no tracking. When you close this page, what you entered is gone. This device only remembers that you accepted the terms.',
-    'Reminders go into your own calendar. We never see them.',
+    'Calendar reminders go into your own calendar; we never see them. If you ask for email reminders, we keep your email, the date and a short label until the date passes.',
     'If you send feedback, your star rating and comment are stored for LexCourt’s team to review.',
   ],
   startTitle: 'Read my court notice',
@@ -231,7 +231,7 @@ const es: Strings = {
   privacy: [
     'Su aviso se lee en este teléfono o computadora. No lo subimos a internet y no lo guardamos.',
     'No hay cuentas ni rastreo. Cuando cierre esta página, lo que escribió se borra. Este dispositivo solo recuerda que usted aceptó los términos.',
-    'Los recordatorios van a su propio calendario. Nosotros nunca los vemos.',
+    'Los recordatorios de calendario van a su propio calendario; nosotros nunca los vemos. Si pide recordatorios por correo, guardamos su correo, la fecha y una etiqueta corta hasta que pasa la fecha.',
     'Si envía comentarios, su calificación y su comentario se guardan para que el equipo de LexCourt los revise.',
   ],
   startTitle: 'Leer mi aviso de la corte',

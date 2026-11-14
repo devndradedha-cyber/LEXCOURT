@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Check, Copy, ExternalLink } from 'lucide-react';
+import { Icon } from './Art';
 import type { Lang } from '../lib/i18n';
 import { TOOLS, TOOLS_DRAFT } from '../lib/toolsText';
 
@@ -22,7 +24,8 @@ export function InfoNotAdvice({ lang }: { lang: Lang }) {
 export function ExtLink({ href, children, lang }: { href: string; children: React.ReactNode; lang: Lang }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer">
-      {children} ↗<span className="sr-only"> {TOOLS[lang].openNewTab}</span>
+      {children} <Icon as={ExternalLink} size={16} />
+      <span className="sr-only"> {TOOLS[lang].openNewTab}</span>
     </a>
   );
 }
@@ -43,7 +46,7 @@ export function CopyButton({ text, lang, className = 'btn' }: { text: string; la
   return (
     <>
       <button type="button" className={className} onClick={copy} disabled={!text.trim()}>
-        {state === 'copied' ? `✓ ${t.copied}` : `📋 ${t.copy}`}
+        <Icon as={state === 'copied' ? Check : Copy} /> {state === 'copied' ? t.copied : t.copy}
       </button>
       {state === 'failed' && (
         <span className="error" role="alert">

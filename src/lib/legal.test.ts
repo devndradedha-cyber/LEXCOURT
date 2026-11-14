@@ -109,9 +109,9 @@ describe('draft 2 changes', () => {
     for (const lang of ['en', 'es'] as const) expect(LEGAL[lang].acceptIntro).toContain(terms(lang)[5].paragraphs![0]);
   });
 
-  it('numbers the Terms sections 1–17 in order, in every language', () => {
+  it('numbers the Terms sections 1–18 in order, in every language', () => {
     for (const lang of ['en', 'es', 'hi', 'pa', 'ur'] as const)
-      expect(terms(lang).map((s) => parseInt(s.heading, 10))).toEqual(Array.from({ length: 17 }, (_, i) => i + 1));
+      expect(terms(lang).map((s) => parseInt(s.heading, 10))).toEqual(Array.from({ length: 18 }, (_, i) => i + 1));
   });
 
   it('adds severability, entire agreement and Pennsylvania governing law with placeholders', () => {
@@ -124,7 +124,7 @@ describe('draft 2 changes', () => {
       expect(last).toMatch(/Pennsylvania|Pensilvania/);
       expect(last).toContain('[OPERATOR NAME]');
       expect(last).toContain('[CONTACT EMAIL]');
-      const privacyLast = LEGAL[lang].privacy.sections[7].paragraphs![0];
+      const privacyLast = LEGAL[lang].privacy.sections[8].paragraphs![0];
       expect(privacyLast).toContain('[OPERATOR NAME]');
       expect(privacyLast).toContain('[CONTACT EMAIL]');
     }

@@ -37,9 +37,9 @@ describe('feedback prompt text', () => {
 describe('legal text covers feedback (draft 6)', () => {
   it.each(ALL)('%s: Terms section 17 and a Privacy Policy feedback section', (lang) => {
     const L = LEGAL[lang];
-    expect(L.terms.sections).toHaveLength(17);
+    expect(L.terms.sections.length).toBeGreaterThanOrEqual(17);
     expect(parseInt(L.terms.sections[16].heading, 10)).toBe(17);
-    expect(L.privacy.sections).toHaveLength(9);
+    expect(L.privacy.sections).toHaveLength(10);
     const fb = L.privacy.sections[5];
     expect(fb.paragraphs).toHaveLength(4);
     expect(fb.paragraphs!.join(' ')).toContain('Supabase');

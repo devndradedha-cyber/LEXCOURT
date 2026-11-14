@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { handleModerate, handleQueue, handleStats, handleSubmit, type Deps } from './server/feedbackApi.js';
 import { MemoryStore } from './server/store.js';
+import { MemoryMailer } from './server/mailer.js';
+import { MemoryReminderStore } from './server/reminderStore.js';
+import { handleConfirm, handleCreate, handleCron, handleReminderStats, handleUnsubscribe, type ReminderDeps } from './server/reminderApi.js';
 
 /**
  * Content-Security-Policy for the production build. It makes the browser refuse
@@ -35,18 +38,40 @@ function cspPlugin(): Plugin {
 }
 
 /**
- * Local development only: serve /api/* with an in-memory feedback store, so the
- * feedback prompt and admin dashboard can be tried without Supabase. Never part
+ * Local development only: serve /api/* with in-memory feedback and reminder
+ * stores, so they can be tried without Supabase or Resend. Never part
  * of the production build (Vercel runs the functions in /api instead).
  * Admin password: ADMIN_PASSWORD, or "local-dev-password" by default.
  */
 function devApiPlugin(): Plugin {
-  const deps: Deps = { store: new MemoryStore(), adminPassword: process.env.ADMIN_PASSWORD ?? 'local-dev-password', authDelayMs: 200 };
-  const routes: Record<string, (r: Request, d: Deps) => Promise<Response>> = {
-    '/api/feedback': handleSubmit,
-    '/api/admin/stats': handleStats,
-    '/api/admin/queue': handleQueue,
-    '/api/admin/moderate': handleModerate,
+  const adminPassword = process.env.ADMIN_PASSWORD ?? 'local-dev-password';
+  const deps: Deps = { store: new MemoryStore(), adminPassword, authDelayMs: 200 };
+  // Email reminders: kept in memory, and emails go to an outbox you can read at
+  // /api/dev/outbox instead of being sent. Daily job: GET /api/cron/reminders
+  // with "Authorization: Bearer local-cron-secret".
+  const mailer = new MemoryMailer();
+  const rdeps: ReminderDeps = {
+    store: new MemoryReminderStore(),
+    mailer,
+    secret: 'local-dev-reminder-secret-not-for-production',
+    appUrl: null,
+    cronSecret: 'local-cron-secret',
+    adminPassword,
+    authDelayMs: 200,
+  };
+  const r = (h: (req: Request, d: ReminderDeps) => Promise<Response>) => (req: Request) => h(req, rdeps);
+  const f = (h: (req: Request, d: Deps) => Promise<Response>) => (req: Request) => h(req, deps);
+  const routes: Record<string, (r: Request) => Promise<Response>> = {
+    '/api/feedback': f(handleSubmit),
+    '/api/admin/stats': f(handleStats),
+    '/api/admin/queue': f(handleQueue),
+    '/api/admin/moderate': f(handleModerate),
+    '/api/reminders': r(handleCreate),
+    '/api/reminders/confirm': r(handleConfirm),
+    '/api/reminders/unsubscribe': r(handleUnsubscribe),
+    '/api/cron/reminders': r(handleCron),
+    '/api/admin/reminders': r(handleReminderStats),
+    '/api/dev/outbox': async () => new Response(JSON.stringify(mailer.outbox), { headers: { 'Content-Type': 'application/json' } }),
   };
   const middleware = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const path = (req.url ?? '').split('?')[0];
@@ -59,7 +84,7 @@ function devApiPlugin(): Plugin {
       headers: req.headers as Record<string, string>,
       body: ['GET', 'HEAD'].includes(req.method ?? 'GET') ? undefined : Buffer.concat(chunks),
     });
-    const response = await handler(request, deps);
+    const response = await handler(request);
     res.statusCode = response.status;
     response.headers.forEach((v, k) => res.setHeader(k, v));
     res.end(Buffer.from(await response.arrayBuffer()));

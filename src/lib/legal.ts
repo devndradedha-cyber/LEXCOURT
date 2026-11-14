@@ -15,7 +15,7 @@ import { hiLegal } from './locales/hi';
 import { paLegal } from './locales/pa';
 import { urLegal } from './locales/ur';
 
-export const TERMS_VERSION = '2026-11-12-draft-6';
+export const TERMS_VERSION = '2026-11-12-draft-7';
 export const IS_DRAFT = true;
 
 export interface Section {
@@ -111,7 +111,7 @@ const en: LegalText = {
   },
   terms: {
     title: 'Terms of Use',
-    updated: 'Draft 6 of November 12, 2026',
+    updated: 'Draft 7 of November 12, 2026',
     sections: [
       {
         heading: '1. Agreement',
@@ -211,18 +211,24 @@ const en: LegalText = {
           'You can rate LexCourt and leave a comment. Ratings are about LexCourt only, not about any lawyer, representative or other person. If you allow your comment to be shared, you give LexCourt permission to publish it after removing names and personal details; LexCourt may edit it for that purpose or choose not to publish it. Do not use feedback to accuse anyone of fraud or misconduct; use Report a problem to reach the offices that handle complaints.',
         ],
       },
+      {
+        heading: '18. Reminders',
+        paragraphs: [
+          'LexCourt can make a calendar file and, if you ask, send email reminders 7 days, 2 days and 1 day before a date you choose. Reminders are a free convenience. They may be late, go to spam or not arrive, and the date may be wrong if it was read or typed wrongly. Always double-check the date on your official notice and with the court. LexCourt is not responsible for missed dates, hearings or deadlines. You can stop email reminders at any time with the link in each email. [ATTORNEY REVIEW: confirm this works together with sections 10 and 11.]',
+        ],
+      },
     ],
   },
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Draft 6 of November 12, 2026',
+    updated: 'Draft 7 of November 12, 2026',
     sections: [
       {
         heading: 'In short',
         bullets: [
           'Your notice is read on your own phone or computer. LexCourt does not upload it, does not store it, and never receives it.',
           'No accounts, no names, no cookies, no analytics, no advertising, no tracking.',
-          'LexCourt keeps only two things: a note on your device that you accepted the terms and — only if you choose to send it — your feedback about LexCourt (a star rating and an optional comment).',
+          'LexCourt keeps only what you choose to send: your feedback about LexCourt, and — if you ask for email reminders — your email address, the date and a short label. Your device also keeps a note that you accepted the terms.',
         ],
       },
       {
@@ -230,6 +236,7 @@ const en: LegalText = {
         paragraphs: [
           'Photos, PDFs, text you type or speak, and the details LexCourt finds (such as your hearing date, court address and A-Number) are processed only inside your browser. They are not sent to LexCourt and are erased when you close or reload the page.',
           'LexCourt never receives your notice or the details from it, so it has none of that information to share with anyone, including government agencies. Our hosting provider’s technical records are described below.',
+          'Exception: if you ask for email reminders, LexCourt receives and keeps your email address, the date and a short label (for example “Court hearing”), as described in “Email reminders you ask for” below. It never receives your notice, A-Number, case number or immigration status for reminders.',
         ],
       },
       {
@@ -263,6 +270,14 @@ const en: LegalText = {
           'Do not include your name, A-Number, case numbers, immigration status or other personal details in a comment. LexCourt removes these automatically when it finds them.',
           'Feedback is stored with our database provider (currently Supabase), and only LexCourt’s reviewers can read it. Comments are private. A comment can be shared publicly only if you tick the box allowing it and a reviewer approves it; names of people and law firms are removed first. Comments about fraud or scams are never shared — use Report a problem instead.',
           'To ask us to delete your feedback, contact [CONTACT EMAIL] and tell us roughly when you sent it and what it said. [ATTORNEY REVIEW: how long feedback is kept, how deletion requests are handled, and any notices required for storing it.]',
+        ],
+      },
+      {
+        heading: 'Email reminders you ask for',
+        paragraphs: [
+          'If you ask for email reminders, we store your email address, the date, a short label (Court hearing, Deadline or Appointment), the language for the emails, whether you confirmed, and which reminders were already sent. We do not store your name, A-Number, case number, immigration status, court address, hearing time or your notice with it.',
+          'We first send a confirmation email; reminders start only after you tap the link in it. If you do not confirm within 2 days, your address is deleted. Your address and reminder are deleted after the date passes, or right away when you tap “Stop these reminders” in any email.',
+          'Emails are sent through our email provider (currently Resend), and reminders are stored with our database provider (currently Supabase). We count how many reminder emails are sent, with no personal details, to measure how LexCourt helps. Anyone who can read your email may see the reminders, so use an address you trust. [ATTORNEY REVIEW: email-law requirements (for example CAN-SPAM) for these reminders, state privacy-law notices, and whether a mailing address must appear in them.]',
         ],
       },
       {
@@ -349,7 +364,7 @@ const es: LegalText = {
   },
   terms: {
     title: 'Términos de uso',
-    updated: 'Borrador 6 del 12 de noviembre de 2026',
+    updated: 'Borrador 7 del 12 de noviembre de 2026',
     sections: [
       {
         heading: '1. Acuerdo',
@@ -449,18 +464,24 @@ const es: LegalText = {
           'Usted puede calificar LexCourt y dejar un comentario. Las calificaciones son solo sobre LexCourt, no sobre ningún abogado, representante u otra persona. Si permite que su comentario se comparta, le da permiso a LexCourt para publicarlo después de quitar nombres y datos personales; LexCourt puede editarlo con ese fin o decidir no publicarlo. No use los comentarios para acusar a nadie de fraude o mala conducta; use Reportar un problema para llegar a las oficinas que atienden quejas.',
         ],
       },
+      {
+        heading: '18. Recordatorios',
+        paragraphs: [
+          'LexCourt puede crear un archivo de calendario y, si usted lo pide, enviar recordatorios por correo 7 días, 2 días y 1 día antes de la fecha que usted elija. Los recordatorios son una ayuda gratuita. Pueden llegar tarde, llegar al correo no deseado o no llegar, y la fecha puede estar mal si se leyó o escribió mal. Siempre verifique la fecha en su aviso oficial y con la corte. LexCourt no se hace responsable de fechas, audiencias o plazos perdidos. Puede dejar de recibir los recordatorios por correo en cualquier momento con el enlace que viene en cada correo. [REVISIÓN DE ABOGADO: confirmar que esto concuerda con las secciones 10 y 11.]',
+        ],
+      },
     ],
   },
   privacy: {
     title: 'Política de privacidad',
-    updated: 'Borrador 6 del 12 de noviembre de 2026',
+    updated: 'Borrador 7 del 12 de noviembre de 2026',
     sections: [
       {
         heading: 'En resumen',
         bullets: [
           'Su aviso se lee en su propio teléfono o computadora. LexCourt no lo sube a internet, no lo guarda y nunca lo recibe.',
           'No hay cuentas, nombres, cookies, analítica, publicidad ni rastreo.',
-          'LexCourt guarda solo dos cosas: una nota en su dispositivo de que usted aceptó los términos y — solo si usted decide enviarlos — sus comentarios sobre LexCourt (una calificación con estrellas y un comentario opcional).',
+          'LexCourt guarda solo lo que usted decide enviar: sus comentarios sobre LexCourt y — si pide recordatorios por correo — su correo electrónico, la fecha y una etiqueta corta. Su dispositivo también guarda una nota de que usted aceptó los términos.',
         ],
       },
       {
@@ -468,6 +489,7 @@ const es: LegalText = {
         paragraphs: [
           'Las fotos, los PDF, el texto que usted escribe o dice, y los datos que LexCourt encuentra (como la fecha de su audiencia, la dirección de la corte y su Número A) se procesan solo dentro de su navegador. No se envían a LexCourt y se borran al cerrar o recargar la página.',
           'LexCourt nunca recibe su aviso ni los datos que contiene, así que no tiene nada de esa información para compartir con nadie, incluidas las agencias del gobierno. Los registros técnicos de nuestro proveedor de alojamiento se describen abajo.',
+          'Excepción: si pide recordatorios por correo, LexCourt recibe y guarda su correo electrónico, la fecha y una etiqueta corta (por ejemplo, “Audiencia en la corte”), como se explica abajo en “Recordatorios por correo que usted pide”. Para los recordatorios nunca recibe su aviso, Número A, número de caso ni estatus migratorio.',
         ],
       },
       {
@@ -501,6 +523,14 @@ const es: LegalText = {
           'No incluya su nombre, Número A, números de caso, estatus migratorio ni otros datos personales en un comentario. LexCourt los quita automáticamente cuando los encuentra.',
           'Los comentarios se guardan con nuestro proveedor de base de datos (actualmente Supabase) y solo los revisores de LexCourt pueden leerlos. Los comentarios son privados. Un comentario solo se puede compartir públicamente si usted marca la casilla que lo permite y un revisor lo aprueba; primero se quitan los nombres de personas y bufetes. Los comentarios sobre fraude o estafas nunca se comparten — use Reportar un problema.',
           'Para pedirnos que borremos sus comentarios, escriba a [CONTACT EMAIL] y díganos más o menos cuándo los envió y qué decían. [REVISIÓN DE ABOGADO: cuánto tiempo se guardan los comentarios, cómo se atienden las solicitudes de borrado y avisos requeridos por guardarlos.]',
+        ],
+      },
+      {
+        heading: 'Recordatorios por correo que usted pide',
+        paragraphs: [
+          'Si pide recordatorios por correo, guardamos su correo electrónico, la fecha, una etiqueta corta (Audiencia en la corte, Fecha límite o Cita), el idioma de los correos, si usted confirmó y qué recordatorios ya se enviaron. No guardamos con ellos su nombre, Número A, número de caso, estatus migratorio, dirección de la corte, hora de la audiencia ni su aviso.',
+          'Primero le enviamos un correo de confirmación; los recordatorios empiezan solo después de que usted toque el enlace. Si no confirma en 2 días, se borra su correo. Su correo y el recordatorio se borran cuando pasa la fecha, o de inmediato si toca “Dejar de recibir estos recordatorios” en cualquier correo.',
+          'Los correos se envían por medio de nuestro proveedor de correo (actualmente Resend) y los recordatorios se guardan con nuestro proveedor de base de datos (actualmente Supabase). Contamos cuántos correos de recordatorio se envían, sin datos personales, para medir cómo ayuda LexCourt. Cualquier persona que pueda leer su correo podría ver los recordatorios, así que use una dirección de confianza. [REVISIÓN DE ABOGADO: requisitos de las leyes de correo electrónico (por ejemplo, CAN-SPAM) para estos recordatorios, avisos de leyes estatales de privacidad y si deben incluir una dirección postal.]',
         ],
       },
       {

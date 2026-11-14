@@ -94,16 +94,21 @@ export async function handleSubmit(request: Request, deps: Deps): Promise<Respon
 
 const digest = (s: string) => createHash('sha256').update(s, 'utf8').digest();
 
-async function authorised(request: Request, deps: Deps): Promise<Response | null> {
-  if (!deps.store) return json(503, { error: 'feedback_unavailable' });
-  if (!deps.adminPassword || deps.adminPassword.length < 12) return json(503, { error: 'admin_not_configured' });
+/** Checks the admin password (Bearer header). Returns an error response, or null if allowed. */
+export async function checkAdmin(request: Request, adminPassword: string | null, authDelayMs?: number): Promise<Response | null> {
+  if (!adminPassword || adminPassword.length < 12) return json(503, { error: 'admin_not_configured' });
   const header = request.headers.get('authorization') ?? '';
   const given = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!timingSafeEqual(digest(given), digest(deps.adminPassword))) {
-    await new Promise((r) => setTimeout(r, deps.authDelayMs ?? 600));
+  if (!timingSafeEqual(digest(given), digest(adminPassword))) {
+    await new Promise((r) => setTimeout(r, authDelayMs ?? 600));
     return json(401, { error: 'unauthorised' });
   }
   return null;
+}
+
+async function authorised(request: Request, deps: Deps): Promise<Response | null> {
+  if (!deps.store) return json(503, { error: 'feedback_unavailable' });
+  return checkAdmin(request, deps.adminPassword, deps.authDelayMs);
 }
 
 export interface Stats {

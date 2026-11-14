@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { Icon } from './Art';
 import type { FeedbackRecord } from '../lib/feedback/shared';
 import { langInfo, type Lang } from '../lib/i18n';
 
@@ -13,6 +15,12 @@ interface Stats {
   average: number | null;
   pending: number;
   perFeature: Record<string, { count: number; average: number | null; distribution: number[] }>;
+}
+interface ReminderStats {
+  configured: boolean;
+  emailsSent: number;
+  confirmed: number;
+  active: number;
 }
 interface Queue {
   pending: FeedbackRecord[];
@@ -43,6 +51,7 @@ export function AdminDashboard() {
   const [authed, setAuthed] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [queue, setQueue] = useState<Queue | null>(null);
+  const [reminders, setReminders] = useState<ReminderStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -55,7 +64,11 @@ export function AdminDashboard() {
     setBusy(true);
     setError(null);
     try {
-      const [s, q] = await Promise.all([api<Stats>('/api/admin/stats', pw), api<Queue>('/api/admin/queue', pw)]);
+      const [s, q, r] = await Promise.all([
+        api<Stats>('/api/admin/stats', pw),
+        api<Queue>('/api/admin/queue', pw),
+        api<ReminderStats>('/api/admin/reminders', pw).catch(() => null),
+      ]);
       if (s.status !== 200) {
         setError(ERRORS[s.body.error ?? ''] ?? 'Something went wrong.');
         if (s.status === 401) setAuthed(null);
@@ -64,6 +77,7 @@ export function AdminDashboard() {
       setAuthed(pw);
       setStats(s.body);
       setQueue(q.body);
+      setReminders(r && r.status === 200 ? r.body : null);
     } catch {
       setError('Could not reach the server.');
     } finally {
@@ -105,7 +119,7 @@ export function AdminDashboard() {
         <div className="row wrap admin-head">
           <h1 id="admin-title">Feedback admin</h1>
           <button className="btn" onClick={() => load(authed)} disabled={busy}>
-            ↻ Refresh
+            <Icon as={RefreshCw} /> Refresh
           </button>
           <button
             className="btn"
@@ -114,6 +128,7 @@ export function AdminDashboard() {
               setPassword('');
               setStats(null);
               setQueue(null);
+              setReminders(null);
             }}
           >
             Sign out
@@ -153,6 +168,27 @@ export function AdminDashboard() {
           </div>
         )}
       </section>
+
+      {reminders && (
+        <section className="card admin" aria-labelledby="rem-title">
+          <h2 id="rem-title">Deadline reminders</h2>
+          <p className="hint small">Counts only — no email addresses or dates are shown here.{reminders.configured ? '' : ' Email reminders are not set up on the server yet (RESEND_API_KEY, REMINDER_FROM, REMINDER_SECRET).'}</p>
+          <div className="admin-stats">
+            <div className="stat">
+              <span className="stat-num">{reminders.emailsSent}</span>
+              <span className="stat-label">Reminder emails sent</span>
+            </div>
+            <div className="stat">
+              <span className="stat-num">{reminders.confirmed}</span>
+              <span className="stat-label">People who turned on email reminders</span>
+            </div>
+            <div className="stat wide">
+              <span className="stat-num">{reminders.active}</span>
+              <span className="stat-label">Reminders waiting for a date (deleted after the date passes)</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {queue && (
         <>

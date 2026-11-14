@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Download, FileText, Lock, Printer, Share2 } from 'lucide-react';
+import { Icon } from './Art';
 import { aidSummaryFields, aidSummaryHtml, aidSummaryText } from '../lib/aidSummary';
 import type { NoticeFacts } from '../lib/extract';
 import { FEATURES } from '../lib/featuresText';
@@ -36,7 +38,7 @@ export function AidSummary({ lang, facts }: { lang: Lang; facts: NoticeFacts }) 
       <p>{t.intro}</p>
       {!open ? (
         <button className="btn primary big" onClick={() => setOpen(true)}>
-          📝 {t.open}
+          <Icon as={FileText} /> {t.open}
         </button>
       ) : (
         <>
@@ -102,13 +104,13 @@ export function AidSummary({ lang, facts }: { lang: Lang; facts: NoticeFacts }) 
 
           <div className="row wrap aid-actions">
             <button className="btn primary" onClick={() => window.print()}>
-              🖨️ {t.print}
+              <Icon as={Printer} /> {t.print}
             </button>
             <button className="btn" onClick={() => downloadFile(aidSummaryHtml(input), 'legal-help-summary.html', 'text/html;charset=utf-8')}>
-              ⬇️ {t.download}
+              <Icon as={Download} /> {t.download}
             </button>
             <button className="btn" onClick={share}>
-              ↗️ {t.share}
+              <Icon as={Share2} /> {t.share}
             </button>
           </div>
           {shareMsg && (
@@ -116,7 +118,10 @@ export function AidSummary({ lang, facts }: { lang: Lang; facts: NoticeFacts }) 
               {shareMsg}
             </p>
           )}
-          <p className="info small">🔒 {t.nothingSent}</p>
+          <p className="info small">
+            <Icon as={Lock} />
+            <span>{t.nothingSent}</span>
+          </p>
         </>
       )}
     </section>

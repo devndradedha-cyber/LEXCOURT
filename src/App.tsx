@@ -1,9 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
+import {
+  BookOpen,
+  CalendarClock,
+  Camera,
+  CircleCheck,
+  ExternalLink,
+  FileSearch,
+  Globe,
+  HeartHandshake,
+  Info,
+  Keyboard,
+  Lightbulb,
+  MapPin,
+  Mic,
+  Phone,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  Square,
+  TriangleAlert,
+  UserCheck,
+  Flag,
+  Sparkles,
+} from 'lucide-react';
 import { extractNoticeFacts, type NoticeFacts } from './lib/extract';
 import { LANGS, STRINGS, detectLang, langInfo, type Lang } from './lib/i18n';
 import { IS_DRAFT, LEGAL, hasAcceptedTerms, recordTermsAccepted, type LegalDoc } from './lib/legal';
 import { fileToText, type Progress } from './lib/readFile';
-import { downloadIcs, googleCalendarUrl, type ReminderInput } from './lib/reminders';
 import { LINKS } from './lib/resources';
 import { speechSupported, startListening, type Listener } from './lib/speech';
 import { TOOLS } from './lib/toolsText';
@@ -15,19 +38,31 @@ import { GlossaryText, ListenButton, WordsToKnow } from './components/Reading';
 import { FeedbackPrompt } from './components/Feedback';
 import { AdminDashboard } from './components/AdminDashboard';
 import { FEATURES } from './lib/featuresText';
+import { DESIGN } from './lib/designText';
+import { CardIcon, Icon, PeopleIllustration, ReadingArt } from './components/Art';
+import { ReminderCard, ReminderLinkPage } from './components/Reminders';
 
 type Phase = { kind: 'start' } | { kind: 'working'; label: string; fraction: number } | { kind: 'result' };
 
 type LegalRoute = 'disclaimer' | 'terms' | 'privacy';
 type ToolRoute = 'home' | 'status' | 'check' | 'report';
-type Route = ToolRoute | LegalRoute | 'admin';
+/** "reminder" = a confirm or stop link from a reminder email (#/reminder/confirm/<token>). */
+type Route = ToolRoute | LegalRoute | 'admin' | 'reminder';
 const LEGAL_ROUTES: Route[] = ['disclaimer', 'terms', 'privacy'];
 const TOOL_ROUTES: Route[] = ['status', 'check', 'report'];
 const isLegal = (r: Route): r is LegalRoute => LEGAL_ROUTES.includes(r);
+/** Pages that work without accepting the terms first and have no tool tabs. */
+const isStandalone = (r: Route) => isLegal(r) || r === 'admin' || r === 'reminder';
 
 function readRoute(): Route {
-  const r = window.location.hash.replace(/^#\/?/, '') as Route;
-  return LEGAL_ROUTES.includes(r) || TOOL_ROUTES.includes(r) || r === 'admin' ? r : 'home';
+  const r = window.location.hash.replace(/^#\/?/, '');
+  if (/^reminder\/(confirm|stop)\/[\w.-]+$/.test(r)) return 'reminder';
+  return LEGAL_ROUTES.includes(r as Route) || TOOL_ROUTES.includes(r as Route) || r === 'admin' ? (r as Route) : 'home';
+}
+
+function reminderLink(): { action: 'confirm' | 'stop'; token: string } {
+  const [, action, token] = window.location.hash.replace(/^#\/?/, '').split('/');
+  return { action: action === 'stop' ? 'stop' : 'confirm', token: token ?? '' };
 }
 
 /** Simple hash routing (#/terms, #/privacy, #/disclaimer) so pages work on any static host. */
@@ -103,18 +138,20 @@ export default function App() {
     window.scrollTo(0, 0);
   }
 
+  const heroFirst = route === 'home' && phase.kind === 'start';
+
   return (
     <>
       <header className="topbar">
-        <div className="brand">
-          <img src="/icon.svg" alt="" width={32} height={32} />
+        <a className="brand" href="#/" aria-label="LexCourt">
+          <img src="/icon.svg" alt="" width={40} height={40} />
           <div>
             <div className="brand-name">LexCourt</div>
             <div className="brand-tag">{t.appTagline}</div>
           </div>
-        </div>
+        </a>
         <label className="lang">
-          <span aria-hidden="true">🌐</span>
+          <Icon as={Globe} />
           <select
             value={lang}
             onChange={(e) => setLang(e.target.value as Lang)}
@@ -130,22 +167,30 @@ export default function App() {
         </label>
       </header>
 
-      <ShortDisclaimer lang={lang} />
+      {/* On the welcome screen the hero comes first; the disclaimer and tabs follow it. */}
+      {!heroFirst && <ShortDisclaimer lang={lang} />}
 
-      {t.translationDraft && (
-        <p className="translation-draft" role="note">
-          {t.translationDraft}
-        </p>
-      )}
+      {t.translationDraft && !heroFirst && <TranslationDraft text={t.translationDraft} />}
 
-      {!isLegal(route) && route !== 'admin' && <ToolNav lang={lang} route={route} />}
+      {!isStandalone(route) && !heroFirst && <ToolNav lang={lang} route={route as ToolRoute} />}
 
       <main>
         {isLegal(route) && <LegalPage lang={lang} doc={legal[route]} />}
 
         {route === 'admin' && <AdminDashboard />}
 
-        {!isLegal(route) && route !== 'admin' && !accepted && (
+        {route === 'reminder' && <ReminderLinkPage lang={lang} {...reminderLink()} key={window.location.hash} />}
+
+        {heroFirst && (
+          <>
+            <Hero lang={lang} accepted={accepted} error={error} onFile={onFile} />
+            {t.translationDraft && <TranslationDraft text={t.translationDraft} />}
+            <ShortDisclaimer lang={lang} />
+            <ToolNav lang={lang} route="home" />
+          </>
+        )}
+
+        {!isStandalone(route) && !accepted && (
           <AcceptTerms
             lang={lang}
             onAccept={() => {
@@ -158,19 +203,13 @@ export default function App() {
 
         {route === 'home' && accepted && (
           <>
-        {phase.kind === 'start' && <StartScreen lang={lang} error={error} onFile={onFile} onText={analyze} />}
+            {phase.kind === 'start' && <TypeInstead lang={lang} onText={analyze} />}
 
-        {phase.kind === 'working' && (
-          <section className="card" aria-live="polite">
-            <p>{phase.label}</p>
-            <progress value={Math.round(phase.fraction * 100)} max={100} />
-          </section>
-        )}
+            {phase.kind === 'working' && <ReadingScreen lang={lang} label={phase.label} fraction={phase.fraction} />}
 
-        {phase.kind === 'result' && facts && (
-          <Result lang={lang} facts={facts} setFacts={setFacts} sourceText={sourceText} onReset={reset} headingRef={resultRef} />
-        )}
-
+            {phase.kind === 'result' && facts && (
+              <Result lang={lang} facts={facts} setFacts={setFacts} sourceText={sourceText} onReset={reset} headingRef={resultRef} />
+            )}
           </>
         )}
 
@@ -182,17 +221,20 @@ export default function App() {
 
         {route === 'report' && accepted && <ReportProblem lang={lang} />}
 
-        {!isLegal(route) && route !== 'admin' && <LegalHelp lang={lang} />}
+        {/* On the results, free help is one of the three main cards instead. */}
+        {!isStandalone(route) && !(route === 'home' && phase.kind === 'result') && <LegalHelp lang={lang} />}
 
         {route === 'home' && (
           <section className="card subtle" aria-labelledby="privacy-title">
-            <h2 id="privacy-title">{t.privacyTitle}</h2>
+            <h2 id="privacy-title">
+              <Icon as={ShieldCheck} /> {t.privacyTitle}
+            </h2>
             <ul>
               {t.privacy.map((p) => (
                 <li key={p}>{p}</li>
               ))}
             </ul>
-            <a href="#/privacy">{legal.privacy.title} →</a>
+            <a href="#/privacy">{legal.privacy.title}</a>
           </section>
         )}
       </main>
@@ -213,20 +255,29 @@ export default function App() {
 /** Tabs for the four tools. Plain links, so the browser's back button works. */
 function ToolNav({ lang, route }: { lang: Lang; route: ToolRoute }) {
   const n = TOOLS[lang].nav;
-  const tabs: [ToolRoute, string, string][] = [
-    ['home', '#/', n.notice],
-    ['status', '#/status', FEATURES[lang].status.nav],
-    ['check', '#/check', n.check],
-    ['report', '#/report', n.report],
+  const tabs: [ToolRoute, string, string, typeof Camera][] = [
+    ['home', '#/', n.notice, FileSearch],
+    ['status', '#/status', FEATURES[lang].status.nav, Search],
+    ['check', '#/check', n.check, UserCheck],
+    ['report', '#/report', n.report, Flag],
   ];
   return (
     <nav className="tool-nav" aria-label="LexCourt">
-      {tabs.map(([r, href, label]) => (
+      {tabs.map(([r, href, label, icon]) => (
         <a key={r} href={href} aria-current={route === r ? 'page' : undefined}>
-          {label}
+          <Icon as={icon} />
+          <span>{label}</span>
         </a>
       ))}
     </nav>
+  );
+}
+
+function TranslationDraft({ text }: { text: string }) {
+  return (
+    <p className="translation-draft" role="note">
+      {text}
+    </p>
   );
 }
 
@@ -236,9 +287,10 @@ function ShortDisclaimer({ lang }: { lang: Lang }) {
   return (
     <aside className="short-disclaimer" aria-label={legal.shortLinks.disclaimer}>
       <p>
-        <strong>⚠️ </strong>
-        {legal.short}{' '}
-        <a href="#/disclaimer">{legal.shortLinks.disclaimer}</a>
+        <Icon as={Info} />
+        <span>
+          {legal.short} <a href="#/disclaimer">{legal.shortLinks.disclaimer}</a>
+        </span>
       </p>
     </aside>
   );
@@ -259,9 +311,9 @@ function AcceptTerms({ lang, onAccept }: { lang: Lang; onAccept: () => void }) {
   const legal = LEGAL[lang];
   const [checked, setChecked] = useState(false);
   return (
-    <section className="card" aria-labelledby="accept-title">
+    <section className="card enter" aria-labelledby="accept-title">
       <DraftBanner lang={lang} />
-      <h1 id="accept-title">{legal.acceptTitle}</h1>
+      <h2 id="accept-title">{legal.acceptTitle}</h2>
       {legal.acceptIntro.map((p) => (
         <p key={p}>{p}</p>
       ))}
@@ -321,17 +373,46 @@ function LegalPage({ lang, doc }: { lang: Lang; doc: LegalDoc }) {
   );
 }
 
-function StartScreen({
-  lang,
-  error,
-  onFile,
-  onText,
-}: {
-  lang: Lang;
-  error: string | null;
-  onFile: (f: File | undefined) => void;
-  onText: (text: string) => void;
-}) {
+/** Welcome: illustration, one sentence, one big button. */
+function Hero({ lang, accepted, error, onFile }: { lang: Lang; accepted: boolean; error: string | null; onFile: (f: File | undefined) => void }) {
+  const d = DESIGN[lang];
+  const t = STRINGS[lang];
+  return (
+    <section className="hero" aria-labelledby="start-title">
+      <PeopleIllustration />
+      <h1 id="start-title">{d.heroTitle}</h1>
+      {!accepted && <p className="lead">{d.heroText}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      {accepted && (
+        <>
+          {/* One button: the phone offers camera, photos or files (PDF). */}
+          <label className="btn primary big hero-btn">
+            <Icon as={Camera} />
+            {d.scanButton}
+            <input type="file" accept="image/*,application/pdf,.pdf" onChange={(e) => onFile(e.target.files?.[0])} hidden />
+          </label>
+          <p className="scan-sub">{t.startHint}</p>
+          <p className="lead">{d.heroText}</p>
+        </>
+      )}
+      <ul className="badges">
+        {d.badges.map((b) => (
+          <li key={b}>
+            <Icon as={CircleCheck} size={20} />
+            {b}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** The other way in: type or say what the notice says. */
+function TypeInstead({ lang, onText }: { lang: Lang; onText: (text: string) => void }) {
   const t = STRINGS[lang];
   const [text, setText] = useState('');
   const [interim, setInterim] = useState('');
@@ -366,53 +447,51 @@ function StartScreen({
   }
 
   return (
-    <section className="card" aria-labelledby="start-title">
-      <h1 id="start-title">{t.startTitle}</h1>
-      <p className="hint">{t.startHint}</p>
-      {error && (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      )}
-      <label className="btn primary big">
-        {t.uploadPhoto}
-        <input type="file" accept="image/*" capture="environment" onChange={(e) => onFile(e.target.files?.[0])} hidden />
-      </label>
-      <label className="btn big">
-        {t.uploadPdf}
-        <input type="file" accept="application/pdf,.pdf" onChange={(e) => onFile(e.target.files?.[0])} hidden />
-      </label>
-
-      <h2 className="or">{t.orDescribe}</h2>
+    <details className="card type-instead">
+      <summary>
+        <CardIcon as={Keyboard} tone="navy" />
+        <span id="type-title">{t.orDescribe}</span>
+      </summary>
       <textarea
         value={text + (interim ? (text ? ' ' : '') + interim : '')}
         onChange={(e) => setText(e.target.value)}
         placeholder={t.typePlaceholder}
         rows={5}
-        aria-label={t.orDescribe}
+        aria-labelledby="type-title"
         readOnly={listening}
         dir="auto"
       />
       <div className="row">
         {canSpeak && (
           <button className={'btn' + (listening ? ' recording' : '')} onClick={toggleVoice} aria-pressed={listening}>
-            {listening ? `■ ${t.stopSpeaking}` : `🎤 ${t.speak}`}
+            <Icon as={listening ? Square : Mic} /> {listening ? t.stopSpeaking : t.speak}
           </button>
         )}
-        <button className="btn primary" onClick={() => onText(text)} disabled={listening || !text.trim()}>
-          {t.readThis}
+        <button className="btn primary read-this" onClick={() => onText(text)} disabled={listening || !text.trim()}>
+          <Icon as={Sparkles} /> {t.readThis}
         </button>
       </div>
       {listening && <p className="hint" aria-live="polite">{t.listening}</p>}
       <p className="hint small">{canSpeak ? t.voicePrivacy : t.voiceUnsupported}</p>
       {voiceError && <p className="error">{voiceError}</p>}
-    </section>
+    </details>
   );
 }
 
-/** U+200F RIGHT-TO-LEFT MARK: tells calendar apps that Urdu text runs right to left. */
-function rtlMark(lang: Lang): string {
-  return langInfo(lang).dir === 'rtl' ? '\u200F' : '';
+/** Calm loading screen while a photo or PDF is read on the device. */
+function ReadingScreen({ lang, label, fraction }: { lang: Lang; label: string; fraction: number }) {
+  const d = DESIGN[lang];
+  return (
+    <section className="card reading enter" aria-live="polite" aria-busy="true">
+      <ReadingArt />
+      <h1>{d.readingTitle}</h1>
+      <p>{label}</p>
+      <progress value={Math.round(fraction * 100)} max={100} aria-label={d.readingTitle} />
+      <p className="hint small">
+        <Icon as={ShieldCheck} size={18} /> {d.readingCalm}
+      </p>
+    </section>
+  );
 }
 
 function formatDate(date: string, lang: Lang): string {
@@ -448,103 +527,33 @@ function Result({
   headingRef: React.RefObject<HTMLHeadingElement>;
 }) {
   const t = STRINGS[lang];
+  const d = DESIGN[lang];
   const update = (patch: Partial<NoticeFacts>) => setFacts({ ...facts, ...patch });
   const notice = t.notice[facts.noticeType];
   const hearing = facts.hearingType !== 'unknown' ? t.hearing[facts.hearingType] : null;
   const whatRef = useRef<HTMLElement>(null);
   const mustRef = useRef<HTMLElement>(null);
-
-  const reminder: ReminderInput | null = facts.date
-    ? {
-        date: facts.date,
-        time: facts.time,
-        title: rtlMark(lang) + t.reminderTitle,
-        location: facts.courtAddress?.replace(/\n/g, ', ') ?? null,
-        description: rtlMark(lang) + t.reminderDescription(!!facts.aNumber),
-      }
-    : null;
+  const i = (n: number) => ({ '--i': n }) as React.CSSProperties;
 
   return (
     <>
-      <section className="card" aria-labelledby="result-title">
+      <div className="result-head enter" style={i(0)}>
         <h1 id="result-title" tabIndex={-1} ref={headingRef}>
+          <Icon as={CircleCheck} size={30} />
           {t.resultTitle}
         </h1>
-        <p className="warn">{t.checkWarning}</p>
+        <p className="warn">
+          <Icon as={TriangleAlert} />
+          <span>{t.checkWarning}</span>
+        </p>
+      </div>
 
-        {facts.date && (
-          <p className="big-date">
-            {formatDate(facts.date, lang)}
-            {facts.time && (
-              <>
-                {' · '}
-                {/* Isolated so "8:30 AM" keeps its order inside Urdu (right-to-left) text. */}
-                <bdi dir="ltr">{formatTime(facts.time, lang)}</bdi>
-              </>
-            )}
-          </p>
-        )}
-
-        <div className="fields">
-          <label>
-            {t.fieldDate}
-            <input type="date" value={facts.date ?? ''} onChange={(e) => update({ date: e.target.value || null })} />
-            {!facts.date && <span className="missing">{t.notFound}</span>}
-          </label>
-          <label>
-            {t.fieldTime}
-            <input type="time" value={facts.time ?? ''} onChange={(e) => update({ time: e.target.value || null })} />
-            {!facts.time && <span className="missing">{t.notFound}</span>}
-          </label>
-          <label>
-            {t.fieldCourt}
-            <textarea dir="auto" rows={3} value={facts.courtAddress ?? ''} onChange={(e) => update({ courtAddress: e.target.value || null })} />
-            {!facts.courtAddress && <span className="missing">{t.notFound}</span>}
-          </label>
-          <label>
-            {t.fieldANumber}
-            <input
-              inputMode="numeric"
-              dir="ltr"
-              autoComplete="off"
-              value={facts.aNumber ?? ''}
-              onChange={(e) => update({ aNumber: e.target.value || null })}
-            />
-          </label>
+      {/* 1. What this means */}
+      <section className="card meaning enter" aria-labelledby="what-title" ref={whatRef} style={i(1)}>
+        <div className="card-head">
+          <CardIcon as={Lightbulb} />
+          <h2 id="what-title">{d.cardMeaning}</h2>
         </div>
-
-        {facts.dateToBeSet && (
-          <p className="info">
-            <GlossaryText text={t.dateToBeSet} lang={lang} />
-          </p>
-        )}
-        {facts.remote && <p className="info">{t.remoteNote}</p>}
-        <div className="row wrap">
-          <a className="btn" href="#/status">
-            🔎 {FEATURES[lang].status.title}
-          </a>
-        </div>
-      </section>
-
-      <section className="card" aria-labelledby="reminders-title">
-        <h2 id="reminders-title">{t.remindersTitle}</h2>
-        <p className="hint">{t.remindersHint}</p>
-        {reminder ? (
-          <div className="row wrap">
-            <button className="btn primary" onClick={() => downloadIcs(reminder)}>
-              📅 {t.downloadIcs}
-            </button>
-            <a className="btn" href={googleCalendarUrl(reminder)} target="_blank" rel="noopener noreferrer">
-              {t.googleCal}
-            </a>
-          </div>
-        ) : (
-          <p className="missing">{t.needDate}</p>
-        )}
-      </section>
-
-      <section className="card" aria-labelledby="what-title" ref={whatRef}>
-        <h2 id="what-title">{t.whatIsThis}</h2>
         {IS_DRAFT && <p className="draft-inline small" data-no-read>{LEGAL[lang].draftBadge}</p>}
         <ListenButton lang={lang} target={whatRef} />
         <p className="hint small" data-no-read>{FEATURES[lang].glossary.tapHint}</p>
@@ -570,8 +579,105 @@ function Result({
         )}
       </section>
 
-      <section className="card" aria-labelledby="must-title" ref={mustRef}>
-        <h2 id="must-title">{t.mustKnowTitle}</h2>
+      {/* 2. Your next date or deadline */}
+      <section className="card deadline enter" aria-labelledby="date-title" style={i(2)}>
+        <div className="card-head">
+          <CardIcon as={CalendarClock} tone="coral" />
+          <h2 id="date-title">{d.cardDate}</h2>
+        </div>
+        {facts.date ? (
+          <div className="date-panel">
+            <p className="big-date">
+              {formatDate(facts.date, lang)}
+              {facts.time && (
+                <>
+                  {' · '}
+                  {/* Isolated so "8:30 AM" keeps its order inside Urdu (right-to-left) text. */}
+                  <bdi dir="ltr">{formatTime(facts.time, lang)}</bdi>
+                </>
+              )}
+            </p>
+            {facts.courtAddress && (
+              <p className="where">
+                <Icon as={MapPin} />
+                <span dir="auto">{facts.courtAddress}</span>
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="missing">{d.noDate}</p>
+        )}
+
+        {facts.dateToBeSet && (
+          <p className="info">
+            <Icon as={Info} />
+            <span>
+              <GlossaryText text={t.dateToBeSet} lang={lang} />
+            </span>
+          </p>
+        )}
+        {facts.remote && (
+          <p className="info">
+            <Icon as={Info} />
+            <span>{t.remoteNote}</span>
+          </p>
+        )}
+
+        <details className="edit-details" open={!facts.date}>
+          <summary>{d.editDetails}</summary>
+          <div className="fields">
+            <label>
+              {t.fieldDate}
+              <input type="date" value={facts.date ?? ''} onChange={(e) => update({ date: e.target.value || null })} />
+              {!facts.date && <span className="missing">{t.notFound}</span>}
+            </label>
+            <label>
+              {t.fieldTime}
+              <input type="time" value={facts.time ?? ''} onChange={(e) => update({ time: e.target.value || null })} />
+              {!facts.time && <span className="missing">{t.notFound}</span>}
+            </label>
+            <label>
+              {t.fieldCourt}
+              <textarea dir="auto" rows={3} value={facts.courtAddress ?? ''} onChange={(e) => update({ courtAddress: e.target.value || null })} />
+              {!facts.courtAddress && <span className="missing">{t.notFound}</span>}
+            </label>
+            <label>
+              {t.fieldANumber}
+              <input
+                inputMode="numeric"
+                dir="ltr"
+                autoComplete="off"
+                value={facts.aNumber ?? ''}
+                onChange={(e) => update({ aNumber: e.target.value || null })}
+              />
+            </label>
+          </div>
+        </details>
+        <div className="row wrap">
+          <a className="btn" href="#/status">
+            <Icon as={Search} /> {FEATURES[lang].status.title}
+          </a>
+        </div>
+      </section>
+
+      <ReminderCard
+        lang={lang}
+        date={facts.date}
+        time={facts.time}
+        location={facts.courtAddress?.replace(/\n/g, ', ') ?? null}
+        aNumberKnown={!!facts.aNumber}
+        onDate={(date) => update({ date })}
+        style={i(3)}
+      />
+
+      {/* 3. Where to get free help */}
+      <LegalHelp lang={lang} title={d.cardHelp} style={i(4)} />
+
+      <section className="card enter" aria-labelledby="must-title" ref={mustRef} style={i(6)}>
+        <div className="card-head">
+          <CardIcon as={BookOpen} />
+          <h2 id="must-title">{t.mustKnowTitle}</h2>
+        </div>
         {IS_DRAFT && <p className="draft-inline small" data-no-read>{LEGAL[lang].draftBadge}</p>}
         <ListenButton lang={lang} target={mustRef} />
         <ul className="must">
@@ -594,14 +700,14 @@ function Result({
         <pre className="source">{sourceText}</pre>
       </details>
 
-      <button className="btn big" onClick={onReset}>
-        {t.startOver}
+      <button className="btn big start-over" onClick={onReset}>
+        <Icon as={RotateCcw} /> {t.startOver}
       </button>
     </>
   );
 }
 
-function LegalHelp({ lang }: { lang: Lang }) {
+function LegalHelp({ lang, title, style }: { lang: Lang; title?: string; style?: React.CSSProperties }) {
   const t = STRINGS[lang];
   const L = LINKS[lang];
   const links: [string, string][] = [
@@ -612,22 +718,33 @@ function LegalHelp({ lang }: { lang: Lang }) {
     [t.helpForms, L.changeOfAddress],
   ];
   return (
-    <section className="card help" aria-labelledby="help-title">
-      <h2 id="help-title">{t.helpTitle}</h2>
+    <section className="card help enter" aria-labelledby="help-title" style={style}>
+      <div className="card-head">
+        <CardIcon as={HeartHandshake} tone="navy" />
+        <h2 id="help-title">{title ?? t.helpTitle}</h2>
+      </div>
       <p>{t.helpIntro}</p>
       <ul className="links">
         {links.map(([label, href]) => (
           <li key={href}>
             <a href={href} target="_blank" rel="noopener noreferrer">
-              {label} ↗
+              <span>{label}</span>
+              <Icon as={ExternalLink} size={18} className="ext" />
             </a>
           </li>
         ))}
         <li>
-          <a href={`tel:+1${L.caseStatusPhone.replace(/-/g, '').slice(1)}`}>📞 {L.caseStatusPhone}</a>
+          <a href={`tel:+1${L.caseStatusPhone.replace(/-/g, '').slice(1)}`}>
+            <Icon as={Phone} />
+            <bdi dir="ltr">{L.caseStatusPhone}</bdi>
+          </a>
         </li>
       </ul>
-      <p className="warn">{t.notarioWarning}</p>
+      <p className="warn">
+        <Icon as={TriangleAlert} />
+        <span>{t.notarioWarning}</span>
+      </p>
     </section>
   );
 }
+

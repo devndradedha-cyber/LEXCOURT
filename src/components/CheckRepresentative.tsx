@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
+import { Icon } from './Art';
 import { GlossaryText, ListenButton } from './Reading';
 import { FeedbackPrompt } from './Feedback';
 import type { Lang } from '../lib/i18n';
@@ -194,7 +196,9 @@ export function CheckRepresentative({ lang, onReport }: { lang: Lang; onReport: 
           ) : (
             <div className="alert">
               <p>
-                <strong>⚠️ {t.signsSome(signCount)}</strong>
+                <strong>
+                  <Icon as={TriangleAlert} /> {t.signsSome(signCount)}
+                </strong>
               </p>
               <p>{t.signsAction}</p>
               <div className="row wrap">

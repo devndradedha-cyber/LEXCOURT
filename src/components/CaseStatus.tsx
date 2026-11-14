@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { CalendarPlus, Lock, Phone } from 'lucide-react';
+import { Icon } from './Art';
 import { FEATURES } from '../lib/featuresText';
 import { langInfo, type Lang } from '../lib/i18n';
 import { buildMonthlyIcs, downloadFile } from '../lib/reminders';
@@ -55,7 +57,10 @@ export function CaseStatus({ lang, aNumberFromNotice }: { lang: Lang; aNumberFro
             <GlossaryText text={p} lang={lang} />
           </p>
         ))}
-        <p className="info">🔒 {t.noFetch}</p>
+        <p className="info">
+          <Icon as={Lock} />
+          <span>{t.noFetch}</span>
+        </p>
 
         <div className="fields" data-no-read>
           <label>
@@ -106,7 +111,7 @@ export function CaseStatus({ lang, aNumberFromNotice }: { lang: Lang; aNumberFro
         </ol>
         <div className="row wrap" data-no-read>
           <a className="btn primary" href={`tel:+1${L.caseStatusPhone.replace(/-/g, '').slice(1)}`}>
-            📞 {t.callButton}
+            <Icon as={Phone} /> {t.callButton}
           </a>
         </div>
         <p className="hint small">{t.tddNote}</p>
@@ -134,7 +139,7 @@ export function CaseStatus({ lang, aNumberFromNotice }: { lang: Lang; aNumberFro
           </span>
         </label>
         <button className="btn primary big" onClick={addReminder}>
-          📅 {t.reminderButton}
+          <Icon as={CalendarPlus} /> {t.reminderButton}
         </button>
       </section>
 
