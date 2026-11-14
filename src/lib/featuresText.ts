@@ -68,6 +68,8 @@ export interface FeaturesText {
     /** Only an online voice exists for this language; ask before using it. */
     onlineOffer: (language: string) => string;
     useOnline: string;
+    /** Punjabi only: shown while a Hindi voice reads the Punjabi text. */
+    viaHindi?: string;
   };
   glossary: {
     title: string;

@@ -88,7 +88,55 @@ export function redactForOnline(text: string): string {
   return text.replace(/\b(?:A[\s-]?)?\d[\d\s-]{6,}\d\b/g, '…');
 }
 
-export type SpeakResult = 'ok' | 'noVoice' | 'onlineOnly';
+/**
+ * Gurmukhi (Punjabi) to Devanagari, letter by letter. Used only when the
+ * device has no Punjabi voice: a Hindi voice can then read Punjabi words
+ * closely enough to follow. The two scripts share the same Unicode layout
+ * (Gurmukhi = Devanagari + 0x100) except for a few Punjabi-only marks.
+ */
+const GURMUKHI_SPECIAL: Record<string, string> = {
+  'ੰ': 'ं', // tippi -> anusvara
+  'ੲ': 'इ', // iri (vowel bearer)
+  'ੳ': 'उ', // ura (vowel bearer)
+  'ੴ': 'ओं', // ek onkar
+  'ਖ਼': 'ख़', // khha
+  'ਗ਼': 'ग़', // ghha
+  'ਜ਼': 'ज़', // za
+  'ੜ': 'ड़', // rra
+  'ਫ਼': 'फ़', // fa
+  'ੑ': '', // udaat
+  'ੵ': '', // yakash
+};
+const isGurmukhiConsonant = (c: string) => {
+  const n = c.codePointAt(0) ?? 0;
+  return (n >= 0x0a15 && n <= 0x0a39) || (n >= 0x0a59 && n <= 0x0a5e);
+};
+export function gurmukhiToDevanagari(text: string): string {
+  let out = '';
+  const chars = [...text];
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+    const n = c.codePointAt(0) ?? 0;
+    if (c === 'ੱ') {
+      // addak: doubles the next consonant
+      const next = chars[i + 1];
+      if (next && isGurmukhiConsonant(next)) out += gurmukhiToDevanagari(next) + '्';
+      continue;
+    }
+    if (c in GURMUKHI_SPECIAL) out += GURMUKHI_SPECIAL[c];
+    else if (n >= 0x0a00 && n <= 0x0a7f) out += String.fromCodePoint(n - 0x100);
+    else out += c;
+  }
+  // Gurmukhi sha and lla are often typed as sa/la + nukta.
+  return out.replace(/\u0938\u093C/g, '\u0936').replace(/\u0932\u093C/g, '\u0932').replace(/\u0933/g, '\u0932');
+}
+
+/** Remove the script subtag (pa-Guru-IN -> pa-IN); phones' speech engines expect that. */
+export function plainTag(tag: string): string {
+  return tag.replace(/-[A-Z][a-z]{3}(?=-|$)/, '');
+}
+
+export type SpeakResult = 'ok' | 'viaHindi' | 'noVoice' | 'onlineOnly';
 
 /**
  * Speak text in the language `tag`.
@@ -101,15 +149,30 @@ export type SpeakResult = 'ok' | 'noVoice' | 'onlineOnly';
 export async function speak(text: string, tag: string, onEnd: () => void, allowOnline = false): Promise<SpeakResult> {
   const synth = window.speechSynthesis;
   const voices = await loadVoices();
-  const voice = pickVoice(voices, tag, allowOnline);
-  if (!voice && voices.length) return pickVoice(voices, tag, true) ? 'onlineOnly' : 'noVoice';
+  let voice = pickVoice(voices, tag, allowOnline);
+  let result: SpeakResult = 'ok';
+  let body = text;
+  // Punjabi: most iPhones and computers have no Punjabi voice. Read the
+  // Gurmukhi text with a Hindi voice instead (letter-for-letter conversion).
+  if (!voice && voices.length && tag.toLowerCase().startsWith('pa')) {
+    const hindi = pickVoice(voices, 'hi-IN', allowOnline);
+    if (hindi) {
+      voice = hindi;
+      result = 'viaHindi';
+      body = gurmukhiToDevanagari(text);
+    }
+  }
+  if (!voice && voices.length) {
+    const online = pickVoice(voices, tag, true) ?? (tag.toLowerCase().startsWith('pa') ? pickVoice(voices, 'hi-IN', true) : null);
+    return online ? 'onlineOnly' : 'noVoice';
+  }
   synth.cancel();
   const online = !!voice && !voice.localService;
-  const parts = splitForSpeech(online ? redactForOnline(text) : text);
+  const parts = splitForSpeech(online ? redactForOnline(body) : body);
   parts.forEach((part, i) => {
     const u = new SpeechSynthesisUtterance(part);
     if (voice) u.voice = voice;
-    u.lang = voice?.lang ?? tag;
+    u.lang = voice?.lang ?? plainTag(tag);
     u.rate = 0.95;
     if (i === parts.length - 1) {
       u.onend = onEnd;
@@ -118,7 +181,7 @@ export async function speak(text: string, tag: string, onEnd: () => void, allowO
     synth.speak(u);
   });
   if (!parts.length) onEnd();
-  return 'ok';
+  return result;
 }
 
 export function stopSpeaking(): void {

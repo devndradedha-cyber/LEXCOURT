@@ -27,7 +27,9 @@ const FACTS: NoticeFacts = {
 
 describe('feature text', () => {
   it.each(LANGS)('%s has the same structure as English and no empty text', (lang) => {
-    expect(shape(FEATURES[lang])).toEqual(shape(FEATURES.en));
+    // viaHindi exists only in Punjabi (it reads Punjabi with a Hindi voice).
+    const { viaHindi: _v, ...listen } = FEATURES[lang].listen;
+    expect(shape({ ...FEATURES[lang], listen })).toEqual(shape(FEATURES.en));
     const walk = (o: unknown): string[] =>
       typeof o === 'string' ? [o] : Array.isArray(o) ? o.flatMap(walk) : o && typeof o === 'object' ? Object.values(o).flatMap(walk) : [];
     for (const s of walk(FEATURES[lang])) expect(s.trim()).not.toBe('');
@@ -204,5 +206,18 @@ describe('redactForOnline', () => {
     expect(redactForOnline('A-Number: 123-456-789. सुनवाई 5 जनवरी')).not.toMatch(/123/);
     expect(redactForOnline('A 012345678')).not.toMatch(/0123/);
     expect(redactForOnline('सुनवाई 5 जनवरी 2027 को 9 बजे')).toBe('सुनवाई 5 जनवरी 2027 को 9 बजे');
+  });
+});
+
+describe('Punjabi read aloud fallback', () => {
+  it('converts Gurmukhi to Devanagari for a Hindi voice', async () => {
+    const { gurmukhiToDevanagari, plainTag } = await import('./readAloud');
+    expect(gurmukhiToDevanagari('ਪੰਜਾਬੀ')).toBe('पंजाबी');
+    expect(gurmukhiToDevanagari('ਸੁਣੋ')).toBe('सुणो');
+    expect(gurmukhiToDevanagari('ਪੱਕਾ')).toBe('पक्का');
+    expect(gurmukhiToDevanagari('ਜ਼ਰੂਰੀ A-Number ੧੨')).toBe('ज़रूरी A-Number १२');
+    expect(gurmukhiToDevanagari('ਸ਼ਬਦ')).toBe('शबद');
+    expect(plainTag('pa-Guru-IN')).toBe('pa-IN');
+    expect(plainTag('hi-IN')).toBe('hi-IN');
   });
 });
