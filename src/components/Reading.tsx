@@ -31,6 +31,7 @@ function readableText(root: HTMLElement): string {
 export function ListenButton({ lang, target }: { lang: Lang; target: React.RefObject<HTMLElement> }) {
   const t = FEATURES[lang].listen;
   const id = useId();
+  const [viaHindi, setViaHindi] = useState(false);
   const [state, setState] = useState<'idle' | 'speaking' | 'noVoice' | 'onlineOnly' | 'unsupported'>('idle');
 
   useEffect(() => {
@@ -65,7 +66,8 @@ export function ListenButton({ lang, target }: { lang: Lang; target: React.RefOb
       () => setState((s) => (s === 'speaking' ? 'idle' : s)),
       onlineOk.has(lang),
     );
-    if (result !== 'ok') setState(result);
+    setViaHindi(result === 'viaHindi');
+    if (result !== 'ok' && result !== 'viaHindi') setState(result);
   }
 
   return (
@@ -76,6 +78,11 @@ export function ListenButton({ lang, target }: { lang: Lang; target: React.RefOb
       {state === 'noVoice' && (
         <p className="hint small" role="status">
           {t.noVoice(langInfo(lang).name)}
+        </p>
+      )}
+      {viaHindi && state === 'speaking' && t.viaHindi && (
+        <p className="hint small" role="status">
+          {t.viaHindi}
         </p>
       )}
       {state === 'onlineOnly' && (
