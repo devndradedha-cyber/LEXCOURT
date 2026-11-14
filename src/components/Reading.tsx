@@ -6,6 +6,9 @@ import { speak, speechSupported, stopSpeaking } from '../lib/readAloud';
 
 const SPEAK_EVENT = 'lexcourt-speak';
 
+/** Languages the person agreed to hear with an online voice (this visit only). */
+const onlineOk = new Set<string>();
+
 /** Text a screen reader would read in a section: headings, paragraphs, list items. */
 function readableText(root: HTMLElement): string {
   const parts: string[] = [];
@@ -28,7 +31,7 @@ function readableText(root: HTMLElement): string {
 export function ListenButton({ lang, target }: { lang: Lang; target: React.RefObject<HTMLElement> }) {
   const t = FEATURES[lang].listen;
   const id = useId();
-  const [state, setState] = useState<'idle' | 'speaking' | 'noVoice' | 'unsupported'>('idle');
+  const [state, setState] = useState<'idle' | 'speaking' | 'noVoice' | 'onlineOnly' | 'unsupported'>('idle');
 
   useEffect(() => {
     const other = (e: Event) => {
@@ -44,7 +47,8 @@ export function ListenButton({ lang, target }: { lang: Lang; target: React.RefOb
     return () => stopSpeaking();
   }, [lang]);
 
-  async function toggle() {
+  async function toggle(agreeOnline = false) {
+    if (agreeOnline) onlineOk.add(lang);
     if (state === 'speaking') {
       stopSpeaking();
       setState('idle');
@@ -55,19 +59,32 @@ export function ListenButton({ lang, target }: { lang: Lang; target: React.RefOb
     if (!root) return;
     window.dispatchEvent(new CustomEvent(SPEAK_EVENT, { detail: id }));
     setState('speaking');
-    const ok = await speak(readableText(root), langInfo(lang).speech, () => setState((s) => (s === 'speaking' ? 'idle' : s)));
-    if (!ok) setState('noVoice');
+    const result = await speak(
+      readableText(root),
+      langInfo(lang).speech,
+      () => setState((s) => (s === 'speaking' ? 'idle' : s)),
+      onlineOk.has(lang),
+    );
+    if (result !== 'ok') setState(result);
   }
 
   return (
     <div className="listen" data-no-read>
-      <button type="button" className="btn listen-btn" onClick={toggle} aria-pressed={state === 'speaking'}>
+      <button type="button" className="btn listen-btn" onClick={() => toggle()} aria-pressed={state === 'speaking'}>
         <span aria-hidden="true">{state === 'speaking' ? '■' : '🔊'}</span> {state === 'speaking' ? t.stop : t.listen}
       </button>
       {state === 'noVoice' && (
         <p className="hint small" role="status">
           {t.noVoice(langInfo(lang).name)}
         </p>
+      )}
+      {state === 'onlineOnly' && (
+        <div className="hint small" role="status">
+          <p>{t.onlineOffer(langInfo(lang).name)}</p>
+          <button type="button" className="btn" onClick={() => toggle(true)}>
+            {t.useOnline}
+          </button>
+        </div>
       )}
       {state === 'unsupported' && (
         <p className="hint small" role="status">

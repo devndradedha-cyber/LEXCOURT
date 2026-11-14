@@ -65,6 +65,9 @@ export interface FeaturesText {
     noVoice: (language: string) => string;
     unsupported: string;
     privacy: string;
+    /** Only an online voice exists for this language; ask before using it. */
+    onlineOffer: (language: string) => string;
+    useOnline: string;
   };
   glossary: {
     title: string;
@@ -162,6 +165,8 @@ const en: FeaturesText = {
     noVoice: (l) => `Read aloud is not available in ${l} on this device. You can install a ${l} voice in your phone’s settings (text-to-speech), or read the text.`,
     unsupported: 'Read aloud is not available in this browser.',
     privacy: 'Read aloud uses voices installed on this device, so the text is not sent anywhere.',
+    onlineOffer: (l) => `This device has no built-in ${l} voice. Your browser has an online ${l} voice, but it sends the text to the browser company (for example Google) to be spoken. Long numbers like your A-Number are left out. Or install a ${l} voice in your phone’s text-to-speech settings.`,
+    useOnline: 'Use the online voice',
   },
   glossary: {
     title: 'Words to know',
@@ -301,6 +306,8 @@ const es: FeaturesText = {
     noVoice: (l) => `La lectura en voz alta no está disponible en ${l} en este dispositivo. Puede instalar una voz en ${l} en la configuración de su teléfono (texto a voz), o leer el texto.`,
     unsupported: 'La lectura en voz alta no está disponible en este navegador.',
     privacy: 'La lectura en voz alta usa las voces instaladas en este dispositivo, así que el texto no se envía a ningún lugar.',
+    onlineOffer: (l) => `Este dispositivo no tiene una voz en ${l} instalada. Su navegador tiene una voz en ${l} en línea, pero envía el texto a la empresa del navegador (por ejemplo, Google). Los números largos, como su A-Number, no se envían. También puede instalar una voz en ${l} en la configuración de texto a voz de su teléfono.`,
+    useOnline: 'Usar la voz en línea',
   },
   glossary: {
     title: 'Palabras que debe conocer',
