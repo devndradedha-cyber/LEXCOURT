@@ -97,6 +97,9 @@ describe('read aloud', () => {
   it('uses only voices on the device', () => {
     expect(pickVoice([v('hi-IN', false, 'Google हिन्दी')], 'hi-IN')).toBeNull();
     expect(pickVoice([v('hi-IN', false), v('hi-IN', true, 'Lekha')], 'hi-IN')?.name).toBe('Lekha');
+    // Online voices only after the person agrees (Chrome desktop's Hindi voice is online).
+    expect(pickVoice([v('hi-IN', false, 'Google हिन्दी')], 'hi-IN', true)?.name).toBe('Google हिन्दी');
+    expect(pickVoice([v('hi_IN', true, 'hi')], 'hi-IN')?.name).toBe('hi');
   });
 
   it('matches by language when the region differs, and handles pa-Guru-IN', () => {
@@ -192,5 +195,14 @@ describe('privacy policy covers the new features', () => {
     const b = LEGAL.en.privacy.sections[4].bullets!.join(' ');
     expect(b).toContain('only uses voices installed on your device');
     expect(b).toContain('LexCourt never sends them');
+  });
+});
+
+describe('redactForOnline', () => {
+  it('removes A-Numbers and long numbers before text goes to an online voice', async () => {
+    const { redactForOnline } = await import('./readAloud');
+    expect(redactForOnline('A-Number: 123-456-789. सुनवाई 5 जनवरी')).not.toMatch(/123/);
+    expect(redactForOnline('A 012345678')).not.toMatch(/0123/);
+    expect(redactForOnline('सुनवाई 5 जनवरी 2027 को 9 बजे')).toBe('सुनवाई 5 जनवरी 2027 को 9 बजे');
   });
 });

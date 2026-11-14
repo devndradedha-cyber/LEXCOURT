@@ -14,11 +14,16 @@ export interface VoiceLike {
   default?: boolean;
 }
 
-/** Best on-device voice for a BCP 47 tag such as hi-IN or pa-Guru-IN, or null. */
-export function pickVoice<V extends VoiceLike>(voices: V[], tag: string): V | null {
+/**
+ * Best voice for a BCP 47 tag such as hi-IN or pa-Guru-IN, or null.
+ * By default only on-device voices are used. With `allowOnline`, an online
+ * voice (for example Chrome's "Google हिन्दी") may be used; the UI only allows
+ * this after the person agrees.
+ */
+export function pickVoice<V extends VoiceLike>(voices: V[], tag: string, allowOnline = false): V | null {
   const want = tag.toLowerCase().replace(/_/g, '-');
   const lang = want.split('-')[0];
-  const local = voices.filter((v) => v.localService);
+  const local = voices.filter((v) => allowOnline || v.localService);
   const norm = (v: V) => v.lang.toLowerCase().replace(/_/g, '-');
   return (
     local.find((v) => norm(v) === want) ??
@@ -75,17 +80,36 @@ export function loadVoices(timeoutMs = 1500): Promise<SpeechSynthesisVoice[]> {
   });
 }
 
-/** Speak text with an on-device voice. Returns false if there is none for the language. */
-export async function speak(text: string, tag: string, onEnd: () => void): Promise<boolean> {
+/**
+ * Before text goes to an online voice, remove long numbers such as the
+ * A-Number so they are not sent to the voice service.
+ */
+export function redactForOnline(text: string): string {
+  return text.replace(/\b(?:A[\s-]?)?\d[\d\s-]{6,}\d\b/g, '…');
+}
+
+export type SpeakResult = 'ok' | 'noVoice' | 'onlineOnly';
+
+/**
+ * Speak text in the language `tag`.
+ * - 'ok': speaking with an on-device voice (or an online one, if allowed).
+ * - 'onlineOnly': the only voice for this language is online; ask first.
+ * - 'noVoice': no voice at all for this language.
+ * If the browser lists no voices at all (some Android phones), the phone's
+ * own text-to-speech engine is asked to speak the language directly.
+ */
+export async function speak(text: string, tag: string, onEnd: () => void, allowOnline = false): Promise<SpeakResult> {
   const synth = window.speechSynthesis;
-  const voice = pickVoice(await loadVoices(), tag);
-  if (!voice) return false;
+  const voices = await loadVoices();
+  const voice = pickVoice(voices, tag, allowOnline);
+  if (!voice && voices.length) return pickVoice(voices, tag, true) ? 'onlineOnly' : 'noVoice';
   synth.cancel();
-  const parts = splitForSpeech(text);
+  const online = !!voice && !voice.localService;
+  const parts = splitForSpeech(online ? redactForOnline(text) : text);
   parts.forEach((part, i) => {
     const u = new SpeechSynthesisUtterance(part);
-    u.voice = voice;
-    u.lang = voice.lang;
+    if (voice) u.voice = voice;
+    u.lang = voice?.lang ?? tag;
     u.rate = 0.95;
     if (i === parts.length - 1) {
       u.onend = onEnd;
@@ -94,7 +118,7 @@ export async function speak(text: string, tag: string, onEnd: () => void): Promi
     synth.speak(u);
   });
   if (!parts.length) onEnd();
-  return true;
+  return 'ok';
 }
 
 export function stopSpeaking(): void {
